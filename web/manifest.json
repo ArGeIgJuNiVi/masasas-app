@@ -1,6 +1,6 @@
 {
-    "name": "masasas_app",
-    "short_name": "masasas_app",
+    "name": "Masasas Manager",
+    "short_name": "Masasas",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

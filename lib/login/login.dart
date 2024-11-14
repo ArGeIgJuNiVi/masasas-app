@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:masasas_app/api.dart';
 import 'package:masasas_app/config.dart';
 import 'package:masasas_app/login/login_nfc.dart';
 import 'package:masasas_app/login/login_user.dart';
 import 'package:masasas_app/login/settings.dart';
 import 'package:masasas_app/models.dart';
 import 'package:masasas_app/table_list.dart';
-import 'package:masasas_app/utils.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 
 class Login extends StatefulWidget {
@@ -19,29 +19,40 @@ class _LoginState extends State<Login> {
   bool _settingsOpen = false;
   String? _userID;
   String? _userDailyAccessCode;
-  String? _error;
   LoginPageMethod loginMethod = LoginPageMethod.NFC;
 
   void closeSettings() => setState(() => _settingsOpen = false);
 
-  void setUserCredentials(String userID, String encryptedPassword) async {
-    _userID = userID;
-    _userDailyAccessCode = dailyAccessCode(encryptedPassword);
+  showError(String error, double distanceFromBottom) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          dismissDirection: DismissDirection.up,
+          behavior: SnackBarBehavior.floating,
+          margin:
+              EdgeInsets.only(bottom: distanceFromBottom, left: 16, right: 16),
+          content: Text(
+            error,
+            style: TextStyle(color: Theme.of(context).colorScheme.error),
+          ),
+          backgroundColor: Theme.of(context).colorScheme.errorContainer,
+        ),
+      );
+    }
+  }
 
-    try {
-      var response = (await httpClient.get(apiURI([
-        "user",
-        userID,
-        dailyAccessCode(encryptedPassword),
-        "get_preferences",
-      ])));
-      if (response.statusCode == 200) {
-        setState(() {});
-      } else {
-        invalidateUserCredentials("Invalid user credentials");
-      }
-    } catch (e) {
-      invalidateUserCredentials("Server error detected");
+  void setUserCredentials(String userID, String password) async {
+    var dailyAccessCode =
+        await MasasasApi.getUserDailyAccessCode(userID, password);
+    switch (dailyAccessCode.result) {
+      case MasasasResult.ok:
+        _userID = userID;
+        _userDailyAccessCode = dailyAccessCode.body;
+        return setState(() {});
+
+      default:
+        showError(dailyAccessCode.body, 88);
+        return;
     }
   }
 
@@ -64,16 +75,12 @@ class _LoginState extends State<Login> {
   void invalidateUserCredentials([String? error]) {
     _userID = null;
     _userDailyAccessCode = null;
-    _error = error;
-
-    setState(() {});
 
     if (error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(_error!),
-        backgroundColor: Theme.of(context).colorScheme.errorContainer,
-      ));
+      showError(error, 88);
     }
+
+    setState(() {});
   }
 
   @override
@@ -82,6 +89,7 @@ class _LoginState extends State<Login> {
 
     if (_userID != null && _userDailyAccessCode != null) {
       return TableList(
+        showError: showError,
         userID: _userID!,
         userDailyAccessCode: _userDailyAccessCode!,
         invalidateUserCredentials: invalidateUserCredentials,
@@ -133,7 +141,7 @@ class _LoginState extends State<Login> {
                   icon: const Icon(Icons.person),
                   onPressed: () => setUserCredentials(
                         Config.guestCredentials.id,
-                        Config.guestCredentials.encryptedPassword,
+                        Config.guestCredentials.password,
                       )),
             ],
           ),

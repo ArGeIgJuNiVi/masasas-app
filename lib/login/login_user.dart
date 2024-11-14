@@ -1,5 +1,6 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
-import 'package:masasas_app/utils.dart';
 
 class LoginPassword extends StatefulWidget {
   const LoginPassword({super.key, required this.setUserCredentials});
@@ -18,52 +19,64 @@ class _LoginPasswordState extends State<LoginPassword> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            TextField(
-              controller: _usernameController,
-              decoration: const InputDecoration(
-                labelText: 'Username',
-                border: OutlineInputBorder(),
-              ),
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        mainAxisAlignment: MediaQuery.of(context).size.height > 540
+            ? MainAxisAlignment.center
+            : MainAxisAlignment.start,
+        children: [
+          Visibility(
+            visible: MediaQuery.of(context).size.height > 680,
+            child: Icon(
+              Icons.table_restaurant,
+              size: min(MediaQuery.of(context).size.height / 6,
+                  MediaQuery.of(context).size.width / 2),
             ),
-            const SizedBox(height: 16.0),
-            TextField(
-              controller: _passwordController,
-              obscureText: _obscurePassword,
-              decoration: InputDecoration(
-                labelText: 'Password',
-                border: const OutlineInputBorder(),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _obscurePassword = !_obscurePassword;
-                    });
-                  },
+          ),
+          const Text(
+            "Masasas",
+            style: TextStyle(fontSize: 32),
+          ),
+          const SizedBox(height: 32),
+          TextField(
+            controller: _usernameController,
+            decoration: const InputDecoration(
+              labelText: 'Username',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 16.0),
+          TextField(
+            controller: _passwordController,
+            obscureText: _obscurePassword,
+            decoration: InputDecoration(
+              labelText: 'Password',
+              border: const OutlineInputBorder(),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscurePassword ? Icons.visibility : Icons.visibility_off,
                 ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: FloatingActionButton.extended(
                 onPressed: () {
-                  widget.setUserCredentials(_usernameController.text,
-                      encrypt(_passwordController.text));
+                  setState(() {
+                    _obscurePassword = !_obscurePassword;
+                  });
                 },
-                icon: const Icon(Icons.login),
-                label: const Text('Login'),
               ),
             ),
-          ],
-        ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: FloatingActionButton.extended(
+              onPressed: () {
+                widget.setUserCredentials(
+                    _usernameController.text, _passwordController.text);
+              },
+              icon: const Icon(Icons.login),
+              label: const Text('Login'),
+            ),
+          ),
+        ],
       ),
     );
   }

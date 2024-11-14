@@ -2,20 +2,22 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart';
+import 'package:masasas_app/api.dart';
+import 'package:masasas_app/data/error_messages.dart';
 import 'package:masasas_app/models.dart';
 import 'package:masasas_app/table_manager.dart';
-import 'package:masasas_app/utils.dart';
 
 class TableList extends StatefulWidget {
   const TableList(
       {super.key,
       required this.userID,
       required this.userDailyAccessCode,
-      required this.invalidateUserCredentials});
+      required this.invalidateUserCredentials,
+      required this.showError});
   final String userID;
   final String userDailyAccessCode;
-  final Function invalidateUserCredentials;
+  final Function([String]) invalidateUserCredentials;
+  final Function(String, double) showError;
 
   @override
   State<TableList> createState() => _TableListState();
@@ -30,48 +32,49 @@ class _TableListState extends State<TableList> {
   UserPreferences? _userPreferences;
 
   void updateData([Timer? state]) async {
-    // check credentials + get table list
-    late Response tablesJson;
-    late Response userPreferencesJson;
-    try {
-      tablesJson = await httpClient.get(apiURI([
-        "user",
-        widget.userID,
-        widget.userDailyAccessCode,
-        "get_tables",
-      ]));
-      userPreferencesJson = await httpClient.get(apiURI([
-        "user",
-        widget.userID,
-        widget.userDailyAccessCode,
-        "get_preferences",
-      ]));
-    } catch (_) {
-      _retryCounter++;
-      if (_retryCounter >= 3) {
-        widget.invalidateUserCredentials(
-            "Server error detected, please log back in or try again later");
-      }
-      return;
+    MasasasResponse tablesJson =
+        await MasasasApi.getTables(widget.userID, widget.userDailyAccessCode);
+    MasasasResponse userPreferencesJson = await MasasasApi.getUserPreferences(
+        widget.userID, widget.userDailyAccessCode);
+
+    switch ((tablesJson.result, userPreferencesJson.result)) {
+      case (MasasasResult.connectionError, _):
+      case (_, MasasasResult.connectionError):
+        _retryCounter++;
+        if (_retryCounter >= 3) {
+          widget
+              .invalidateUserCredentials(ErrorMessages.genericConnectionError);
+          // ignore: use_build_context_synchronously
+        }
+        return;
+
+      case (MasasasResult.badRequest, _):
+        widget.invalidateUserCredentials(tablesJson.body);
+        return;
+
+      case (_, MasasasResult.badRequest):
+        widget.invalidateUserCredentials(userPreferencesJson.body);
+        return;
+
+      case (MasasasResult.ok, MasasasResult.ok):
+        _retryCounter = 0;
+        List tableJsonList = jsonDecode(tablesJson.body);
+        _tables = tableJsonList.map((e) => TableValue.fromJson(e)).toList();
+        _userPreferences =
+            UserPreferences.fromJson(jsonDecode(userPreferencesJson.body));
+        return setState(() {});
     }
-
-    if (tablesJson.statusCode != 200 || userPreferencesJson.statusCode != 200) {
-      widget.invalidateUserCredentials("User credentials have expired");
-      return;
-    }
-
-    List tableJsonList = jsonDecode(tablesJson.body);
-    _tables = tableJsonList.map((e) => TableValue.fromJson(e)).toList();
-    _userPreferences =
-        UserPreferences.fromJson(jsonDecode(userPreferencesJson.body));
-
-    setState(() {});
   }
 
-  void deselectTable() {
+  void deselectTable([String? error]) {
     _selectedTableID = null;
     _selectedTableDailyAccessCode = null;
+
     setState(() {});
+
+    if (error != null) {
+      widget.showError(error, 16);
+    }
   }
 
   @override
@@ -152,6 +155,7 @@ class _TableListState extends State<TableList> {
 
     if (_selectedTableID != null && _selectedTableDailyAccessCode != null) {
       return TableManager(
+        invalidateUserCredentials: widget.invalidateUserCredentials,
         deselectTable: deselectTable,
         selectedTableID: _selectedTableID!,
         selectedTableDailyAccessCode: _selectedTableDailyAccessCode!,

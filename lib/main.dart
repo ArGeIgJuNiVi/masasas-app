@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:masasas_app/login/login.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
+
   runApp(const MyApp());
 }
 
@@ -24,7 +27,10 @@ class MyApp extends StatelessWidget {
       ),
       home: const Scaffold(
           body: Padding(
-        padding: EdgeInsets.all(8.0),
+        padding: EdgeInsets.symmetric(
+          horizontal: 8,
+          vertical: 16,
+        ),
         child: Login(),
       )),
     );
