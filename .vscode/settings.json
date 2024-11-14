@@ -1,0 +1,8 @@
+{
+    "cmake.sourceDirectory": "${workspaceFolder}/home/gierka/.pico-sdk/examples",
+    "cSpell.words": [
+        "ecink",
+        "miterlimit",
+        "xlink"
+    ]
+}
