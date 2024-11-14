@@ -1,3 +1,5 @@
+// ignore_for_file: constant_identifier_names
+
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -86,18 +88,18 @@ class UserPreferences {
 }
 
 enum LoginPageMethod {
-  nfc,
-  user,
+  NFC,
+  User,
 }
 
 Widget loginPageIcon(LoginPageMethod method) => switch (method) {
-      LoginPageMethod.nfc => Transform.rotate(
+      LoginPageMethod.NFC => Transform.rotate(
           angle: pi / 2,
           child: const Icon(
             Icons.wifi_rounded,
           ),
         ),
-      LoginPageMethod.user => const Icon(Icons.login),
+      LoginPageMethod.User => const Icon(Icons.login),
     };
 
 Widget deskIcon(String iconName) => switch (iconName) {

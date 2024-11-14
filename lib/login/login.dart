@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:masasas_app/config.dart';
 import 'package:masasas_app/login/login_nfc.dart';
 import 'package:masasas_app/login/login_user.dart';
+import 'package:masasas_app/login/settings.dart';
 import 'package:masasas_app/models.dart';
 import 'package:masasas_app/table_list.dart';
 import 'package:masasas_app/utils.dart';
@@ -15,10 +16,13 @@ class Login extends StatefulWidget {
 }
 
 class _LoginState extends State<Login> {
+  bool _settingsOpen = false;
   String? _userID;
   String? _userDailyAccessCode;
   String? _error;
-  LoginPageMethod loginMethod = LoginPageMethod.nfc;
+  LoginPageMethod loginMethod = LoginPageMethod.NFC;
+
+  void closeSettings() => setState(() => _settingsOpen = false);
 
   void setUserCredentials(String userID, String encryptedPassword) async {
     _userID = userID;
@@ -54,6 +58,7 @@ class _LoginState extends State<Login> {
     } catch (_) {
       _nfcAvailable = false;
     }
+    setState(() {});
   }
 
   void invalidateUserCredentials([String? error]) {
@@ -73,6 +78,8 @@ class _LoginState extends State<Login> {
 
   @override
   Widget build(BuildContext context) {
+    if (_settingsOpen) return Settings(closeSettings: closeSettings);
+
     if (_userID != null && _userDailyAccessCode != null) {
       return TableList(
         userID: _userID!,
@@ -84,10 +91,10 @@ class _LoginState extends State<Login> {
     List<LoginPageMethod> otherLoginMethods = LoginPageMethod.values.toList();
 
     if (!_nfcAvailable) {
-      if (loginMethod == LoginPageMethod.nfc) {
-        loginMethod = LoginPageMethod.user;
+      if (loginMethod == LoginPageMethod.NFC) {
+        loginMethod = LoginPageMethod.User;
       }
-      otherLoginMethods.remove(LoginPageMethod.nfc);
+      otherLoginMethods.remove(LoginPageMethod.NFC);
     }
 
     otherLoginMethods.remove(loginMethod);
@@ -95,13 +102,17 @@ class _LoginState extends State<Login> {
     return Stack(
       children: [
         switch (loginMethod) {
-          LoginPageMethod.nfc => LoginNFC(
+          LoginPageMethod.NFC => LoginNFC(
               setUserCredentials: setUserCredentials,
             ),
-          LoginPageMethod.user => LoginPassword(
+          LoginPageMethod.User => LoginPassword(
               setUserCredentials: setUserCredentials,
             ),
         },
+        IconButton(
+          onPressed: () => setState(() => _settingsOpen = true),
+          icon: const Icon(Icons.settings),
+        ),
         Positioned(
           bottom: 0,
           left: 0,

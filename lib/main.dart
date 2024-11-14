@@ -22,7 +22,11 @@ class MyApp extends StatelessWidget {
         colorSchemeSeed: Colors.lightGreen,
         brightness: Brightness.dark,
       ),
-      home: const Scaffold(body: Login()),
+      home: const Scaffold(
+          body: Padding(
+        padding: EdgeInsets.all(8.0),
+        child: Login(),
+      )),
     );
   }
 }

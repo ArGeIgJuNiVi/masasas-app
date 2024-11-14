@@ -218,12 +218,12 @@ class _TableManagerState extends State<TableManager> {
             )),
             SizedBox(
               width: MediaQuery.of(context).orientation == Orientation.landscape
-                  ? 320
+                  ? 320 * px
                   : MediaQuery.of(context).size.shortestSide,
               height:
                   MediaQuery.of(context).orientation == Orientation.landscape
                       ? MediaQuery.of(context).size.shortestSide
-                      : 320,
+                      : 320 * px,
               child: Card(
                   child: Column(
                 children: [
@@ -236,12 +236,10 @@ class _TableManagerState extends State<TableManager> {
                               _userPreferences!.heightPresets.length - 1);
                           oldIndex = min(oldIndex,
                               _userPreferences!.heightPresets.length - 1);
-                          List<HeightValue> presets =
-                              _userPreferences!.heightPresets.toList();
-                          var tmp = presets[oldIndex];
-                          presets[oldIndex] = presets[newIndex];
-                          presets[newIndex] = tmp;
-                          savePresets(presets);
+                          var tmp = _userPreferences!.heightPresets[oldIndex];
+                          _userPreferences!.heightPresets.removeAt(oldIndex);
+                          _userPreferences!.heightPresets.insert(newIndex, tmp);
+                          savePresets(_userPreferences!.heightPresets);
                         },
                         itemCount: _userPreferences!.heightPresets.length,
                         itemBuilder: (context, index) =>
@@ -452,5 +450,4 @@ class _DialogState extends State<DialogInput> {
       ),
     );
   }
-//TODO settings
 }
