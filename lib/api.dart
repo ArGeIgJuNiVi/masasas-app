@@ -1,7 +1,10 @@
+import 'dart:convert';
+import 'package:encrypt/encrypt.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart';
 import 'package:masasas_app/config.dart';
 import 'package:masasas_app/data/error_messages.dart';
+import 'package:pointycastle/export.dart';
 
 enum MasasasResult { ok, badRequest, connectionError }
 
@@ -19,6 +22,8 @@ class MasasasResponse {
 /// Contains implementations for all the endpoints defined in the masasas table interface
 class MasasasApi {
   static final Client _httpClient = Client();
+  static String? cachedPem;
+  static late RSA cipher;
 
   static Future<MasasasResponse> _handleRequest(
     List<String> path,
@@ -63,6 +68,26 @@ class MasasasApi {
     return MasasasResponse(response.body, MasasasResult.ok);
   }
 
+  static Future<MasasasResponse> _rsa(String str) async {
+    MasasasResponse rsaPem = await _handleRequest(["rsa"], null);
+
+    if (rsaPem.result != MasasasResult.ok) return rsaPem;
+
+    try {
+      if (rsaPem.body != cachedPem) {
+        cachedPem = rsaPem.body;
+        cipher =
+            RSA(publicKey: RSAKeyParser().parse(rsaPem.body) as RSAPublicKey);
+      }
+      return MasasasResponse(
+          cipher.encrypt(utf8.encode(str)).base16.toUpperCase(),
+          MasasasResult.ok);
+    } catch (e) {
+      return MasasasResponse(
+          "Couldn't encrypt password", MasasasResult.badRequest);
+    }
+  }
+
   /// ```text
   /// Get user daily access code
   ///
@@ -72,8 +97,13 @@ class MasasasApi {
   /// - Bad Request errors -
   /// "Invalid user id or daily access code"
   static Future<MasasasResponse> getUserDailyAccessCode(
-          String userID, String password) async =>
-      await _handleRequest(["user", userID, password], null);
+      String userID, String password) async {
+    MasasasResponse passwordRSA = await _rsa(password);
+    if (passwordRSA.result != MasasasResult.ok) return passwordRSA;
+
+    return await _handleRequest(
+        ["user", userID, passwordRSA.body.toUpperCase()], null);
+  }
 
   /// ```text
   /// Get user preferences
