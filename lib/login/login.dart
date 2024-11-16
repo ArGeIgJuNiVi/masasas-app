@@ -1,12 +1,32 @@
+// ignore_for_file: constant_identifier_names
+
+import 'dart:convert';
+import 'dart:math';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:masasas_app/api.dart';
 import 'package:masasas_app/config.dart';
 import 'package:masasas_app/login/login_nfc.dart';
 import 'package:masasas_app/login/login_user.dart';
 import 'package:masasas_app/login/settings.dart';
-import 'package:masasas_app/models.dart';
 import 'package:masasas_app/table_list.dart';
 import 'package:nfc_manager/nfc_manager.dart';
+
+enum LoginPageMethod {
+  NFC,
+  User,
+}
+
+Widget loginPageIcon(LoginPageMethod method) => switch (method) {
+      LoginPageMethod.NFC => Transform.rotate(
+          angle: pi / 2,
+          child: const Icon(
+            Icons.wifi_rounded,
+          ),
+        ),
+      LoginPageMethod.User => const Icon(Icons.login),
+    };
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -19,7 +39,8 @@ class _LoginState extends State<Login> {
   bool _settingsOpen = false;
   String? _userID;
   String? _userDailyAccessCode;
-  LoginPageMethod loginMethod = LoginPageMethod.NFC;
+  LoginPageMethod _loginMethod = LoginPageMethod.NFC;
+  bool _nfcAvailable = false;
 
   void closeSettings() => setState(() => _settingsOpen = false);
 
@@ -41,22 +62,45 @@ class _LoginState extends State<Login> {
     }
   }
 
+  void showConfirmation(String confirmation, double distanceFromBottom) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          dismissDirection: DismissDirection.up,
+          behavior: SnackBarBehavior.floating,
+          margin:
+              EdgeInsets.only(bottom: distanceFromBottom, left: 16, right: 16),
+          content: Text(
+            confirmation,
+            style: TextStyle(color: Theme.of(context).colorScheme.primary),
+          ),
+          backgroundColor: Theme.of(context).colorScheme.onPrimary,
+        ),
+      );
+    }
+  }
+
   void setUserCredentials(String userID, String password) async {
-    var dailyAccessCode =
-        await MasasasApi.getUserDailyAccessCode(userID, password);
-    switch (dailyAccessCode.result) {
+    MasasasResponse userCredentials =
+        await MasasasApi.getUser(userID, password);
+    switch (userCredentials.result) {
       case MasasasResult.ok:
-        _userID = userID;
-        _userDailyAccessCode = dailyAccessCode.body;
+        try {
+          var json = jsonDecode(userCredentials.body);
+          _userID = json["UserID"];
+          _userDailyAccessCode = json["DailyAccessCode"];
+        } catch (e) {
+          if (kDebugMode) print(e);
+          showError("Received invalid user data", 88);
+        }
         return setState(() {});
 
       default:
-        showError(dailyAccessCode.body, 88);
+        showError(userCredentials.body, 88);
         return;
     }
   }
 
-  bool _nfcAvailable = false;
   @override
   void initState() {
     checkNFC();
@@ -69,10 +113,14 @@ class _LoginState extends State<Login> {
     } catch (_) {
       _nfcAvailable = false;
     }
+    if (_nfcAvailable) _loginMethod = LoginPageMethod.NFC;
     setState(() {});
   }
 
-  void invalidateUserCredentials([String? error]) {
+  Future invalidateUserCredentials([String? error]) async {
+    if (_nfcAvailable) {
+      await NfcManager.instance.stopSession();
+    }
     _userID = null;
     _userDailyAccessCode = null;
 
@@ -90,28 +138,31 @@ class _LoginState extends State<Login> {
     if (_userID != null && _userDailyAccessCode != null) {
       return TableList(
         showError: showError,
+        showConfirmation: showConfirmation,
         userID: _userID!,
         userDailyAccessCode: _userDailyAccessCode!,
         invalidateUserCredentials: invalidateUserCredentials,
+        nfcAvailable: _nfcAvailable,
       );
     }
 
     List<LoginPageMethod> otherLoginMethods = LoginPageMethod.values.toList();
 
     if (!_nfcAvailable) {
-      if (loginMethod == LoginPageMethod.NFC) {
-        loginMethod = LoginPageMethod.User;
+      if (_loginMethod == LoginPageMethod.NFC) {
+        _loginMethod = LoginPageMethod.User;
       }
       otherLoginMethods.remove(LoginPageMethod.NFC);
     }
 
-    otherLoginMethods.remove(loginMethod);
+    otherLoginMethods.remove(_loginMethod);
 
     return Stack(
       children: [
-        switch (loginMethod) {
+        switch (_loginMethod) {
           LoginPageMethod.NFC => LoginNFC(
               setUserCredentials: setUserCredentials,
+              showError: invalidateUserCredentials,
             ),
           LoginPageMethod.User => LoginPassword(
               setUserCredentials: setUserCredentials,
@@ -134,7 +185,7 @@ class _LoginState extends State<Login> {
                         label: Text("${otherLoginMethods[index].name} Login"),
                         icon: loginPageIcon(otherLoginMethods[index]),
                         onPressed: () => setState(
-                            () => loginMethod = otherLoginMethods[index]),
+                            () => _loginMethod = otherLoginMethods[index]),
                       ))),
               FloatingActionButton.extended(
                   label: const Text("Guest Login"),

@@ -1,11 +1,16 @@
+import 'dart:async';
 import 'dart:math';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:masasas_app/nfc.dart';
+import 'package:nfc_manager/nfc_manager.dart';
 
 class LoginNFC extends StatefulWidget {
-  const LoginNFC({super.key, required this.setUserCredentials});
+  const LoginNFC(
+      {super.key, required this.setUserCredentials, required this.showError});
 
   final Function(String, String) setUserCredentials;
+  final Function(String) showError;
 
   @override
   State<LoginNFC> createState() => _LoginNFCState();
@@ -15,10 +20,26 @@ class _LoginNFCState extends State<LoginNFC>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
+  late Timer nfcDelay;
 
   @override
   void initState() {
     super.initState();
+
+    //wait a little before initializing nfc to prevent interference when coming from the admin menu
+    nfcDelay = Timer(Durations.medium1, () {
+      NfcManager.instance.startSession(
+        onDiscovered: (NfcTag tag) async {
+          var user = getUserFromNfcCard(tag);
+          if (kDebugMode) print(user);
+          if (user.error != null) {
+            widget.showError(user.error!);
+            return;
+          }
+          widget.setUserCredentials(user.id, user.password);
+        },
+      );
+    });
 
     _controller = AnimationController(
       vsync: this,
@@ -32,6 +53,7 @@ class _LoginNFCState extends State<LoginNFC>
 
   @override
   void dispose() {
+    NfcManager.instance.stopSession();
     _controller.dispose();
     super.dispose();
   }

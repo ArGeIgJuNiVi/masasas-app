@@ -68,7 +68,13 @@ class MasasasApi {
     return MasasasResponse(response.body, MasasasResult.ok);
   }
 
-  static Future<MasasasResponse> _rsa(String str) async {
+  /// ```text
+  /// Encrypt a [String] using the server's client rsa key
+  ///
+  /// - OK Request value -
+  /// Returns a
+  static Future<MasasasResponse> rsaEncrypt(String str,
+      [String typeOfString = "password"]) async {
     MasasasResponse rsaPem = await _handleRequest(["rsa"], null);
 
     if (rsaPem.result != MasasasResult.ok) return rsaPem;
@@ -83,22 +89,22 @@ class MasasasApi {
           cipher.encrypt(utf8.encode(str)).base16.toUpperCase(),
           MasasasResult.ok);
     } catch (e) {
+      if (kDebugMode) print(e);
       return MasasasResponse(
-          "Couldn't encrypt password", MasasasResult.badRequest);
+          "Failed encrypting $typeOfString", MasasasResult.badRequest);
     }
   }
 
   /// ```text
-  /// Get user daily access code
+  /// Get user id and daily access code
   ///
   /// - OK Request value -
-  /// Returns the daily access code as a [String]
+  /// Returns the user id and daily access code as [Json]
   ///
   /// - Bad Request errors -
   /// "Invalid user id or daily access code"
-  static Future<MasasasResponse> getUserDailyAccessCode(
-      String userID, String password) async {
-    MasasasResponse passwordRSA = await _rsa(password);
+  static Future<MasasasResponse> getUser(String userID, String password) async {
+    MasasasResponse passwordRSA = await rsaEncrypt(password);
     if (passwordRSA.result != MasasasResult.ok) return passwordRSA;
 
     return await _handleRequest(
@@ -122,11 +128,25 @@ class MasasasApi {
   /// Get if the user is able to set preferences
   ///
   /// - OK Request value -
-  /// Returns the user personalization state as [String] representation of a [bool]
+  /// Returns the user personalization state as a [String] representation of a [bool]
   ///
   /// Bad Request errors:
-  /// ""Invalid user id or daily access code""
+  /// "Invalid user id or daily access code"
   static Future<MasasasResponse> getUserPersonalizationState(
+          String userID, String userDailyAccessCode) async =>
+      await _handleRequest(
+          ["user", userID, userDailyAccessCode, "get_personalization_state"],
+          null);
+
+  /// ```text
+  /// Get if the user is able to delete their own account
+  ///
+  /// - OK Request value -
+  /// Returns the user self deletion state as a [String] representation of a [bool]
+  ///
+  /// Bad Request errors:
+  /// "Invalid user id or daily access code"
+  static Future<MasasasResponse> getUserSelfDeletionState(
           String userID, String userDailyAccessCode) async =>
       await _handleRequest(
           ["user", userID, userDailyAccessCode, "get_personalization_state"],
@@ -199,36 +219,48 @@ class MasasasApi {
           ["table", tableID, tableDailyAccessCode, "get_data"], null);
 
   /// ```text
-  /// Set table height (double, in meters)
+  /// Set table height (num, in meters)
   ///
   /// - OK Request value -
-  /// Returns the set table height as a [String] representation of a [double]
+  /// Returns the set table height as a [String] representation of a [num]
   ///
   /// - Bad Request errors -
   /// "Invalid table id or daily access code"
   ///
   /// "Invalid table height, should be a double in meters"
   static Future<MasasasResponse> setTableHeight(
-          String tableID, String tableDailyAccessCode, double height) async =>
+          String tableID, String tableDailyAccessCode, num height) async =>
       await _handleRequest(
           ["table", tableID, tableDailyAccessCode, "set_height"],
           height.toString());
 
   /// ```text
-  /// Set table height percentage (double, 0 to 1)
+  /// Set table height percentage (num, 0 to 1)
   ///
   /// - OK Request value -
-  /// Returns the set table height percentage as a [String] representation of a [double]
+  /// Returns the set table height percentage as a [String] representation of a [num]
   ///
   /// - Bad Request errors -
   /// "Invalid table id or daily access code"
   ///
   /// "Invalid table height percentage, should be a double between 0 and 1"
   static Future<MasasasResponse> setTableHeightPercentage(String tableID,
-          String tableDailyAccessCode, double heightPercentage) async =>
+          String tableDailyAccessCode, num heightPercentage) async =>
       await _handleRequest(
           ["table", tableID, tableDailyAccessCode, "set_height_percentage"],
           heightPercentage.toString());
+
+  /// ```text
+  /// Get the list of all users
+  ///
+  /// - OK Request value -
+  /// Returns if the user is an administrator as a [String] representation of a [bool]
+  ///
+  /// - Bad Request errors -
+  /// "Invalid admin id or daily access code"
+  static Future<MasasasResponse> adminGet(
+          String adminID, String adminDailyAccessCode) async =>
+      await _handleRequest(["admin", adminID, adminDailyAccessCode], null);
 
   /// ```text
   /// Get the list of all users
@@ -417,10 +449,10 @@ class MasasasApi {
           null);
 
   /// ```text
-  /// Set the time to reload a file or null to disable automatic reloading (double, in seconds)
+  /// Set the time to reload a file or null to disable automatic reloading (num, in seconds)
   ///
   /// - OK Request value -
-  /// Returns the set reload time in seconds as a [String] representing a [double]
+  /// Returns the set reload time in seconds as a [String] representing a [num]
   ///
   /// - Bad Request errors -
   /// "Invalid admin id or daily access code"
@@ -429,7 +461,7 @@ class MasasasApi {
   ///
   /// "Invalid config reload time, should be a double in seconds, or null to disable reloading"
   static Future<MasasasResponse> adminSetConfigReloadTimeSeconds(
-          String adminID, String adminDailyAccessCode, double time) async =>
+          String adminID, String adminDailyAccessCode, num time) async =>
       await _handleRequest(
           ["admin", adminID, adminDailyAccessCode, "set_config_reload_seconds"],
           time.toString());
@@ -456,7 +488,8 @@ class MasasasApi {
   static Future<MasasasResponse> adminCreateUser(String adminID,
           String adminDailyAccessCode, String userID, String userJson) async =>
       await _handleRequest(
-          ["admin", adminID, adminDailyAccessCode, "create_user"], userJson);
+          ["admin", adminID, adminDailyAccessCode, "create_user", userID],
+          userJson);
 
   /// ```text
   /// Create or update a table
@@ -481,5 +514,6 @@ class MasasasApi {
           String tableID,
           String tableJson) async =>
       await _handleRequest(
-          ["admin", adminID, adminDailyAccessCode, "create_table"], tableJson);
+          ["admin", adminID, adminDailyAccessCode, "create_table", tableID],
+          tableJson);
 }
