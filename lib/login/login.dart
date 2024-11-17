@@ -5,12 +5,12 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:masasas_app/api.dart';
+import 'package:masasas_app/masasas_api/api.dart';
 import 'package:masasas_app/config.dart';
 import 'package:masasas_app/login/login_nfc.dart';
 import 'package:masasas_app/login/login_user.dart';
-import 'package:masasas_app/login/settings.dart';
-import 'package:masasas_app/table_list.dart';
+import 'package:masasas_app/settings.dart';
+import 'package:masasas_app/homepage.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 
 enum LoginPageMethod {
@@ -136,7 +136,7 @@ class _LoginState extends State<Login> {
     if (_settingsOpen) return Settings(closeSettings: closeSettings);
 
     if (_userID != null && _userDailyAccessCode != null) {
-      return TableList(
+      return Homepage(
         showError: showError,
         showConfirmation: showConfirmation,
         userID: _userID!,
@@ -191,8 +191,8 @@ class _LoginState extends State<Login> {
                   label: const Text("Guest Login"),
                   icon: const Icon(Icons.person),
                   onPressed: () => setUserCredentials(
-                        Config.guestCredentials.id,
-                        Config.guestCredentials.password,
+                        Settings.guestCredentials.id,
+                        Settings.guestCredentials.password,
                       )),
             ],
           ),

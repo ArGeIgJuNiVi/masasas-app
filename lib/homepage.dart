@@ -8,8 +8,8 @@ import 'package:masasas_app/api.dart';
 import 'package:masasas_app/data/table_icons.dart';
 import 'package:masasas_app/table_manager.dart';
 
-class TableList extends StatefulWidget {
-  const TableList(
+class Homepage extends StatefulWidget {
+  const Homepage(
       {super.key,
       required this.userID,
       required this.userDailyAccessCode,
@@ -26,10 +26,10 @@ class TableList extends StatefulWidget {
   final bool nfcAvailable;
 
   @override
-  State<TableList> createState() => _TableListState();
+  State<Homepage> createState() => _HomepageState();
 }
 
-class _TableListState extends State<TableList> {
+class _HomepageState extends State<Homepage> {
   int _retryCounter = 0;
   Timer? _updateData;
   List? _tables;

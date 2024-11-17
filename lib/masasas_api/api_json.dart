@@ -1,5 +1,7 @@
-import 'package:masasas_app/api.dart';
+import 'package:masasas_app/masasas_api/api.dart';
 
+/// Returns the json representation of an [UnsecuredUser] (server type)
+/// used in the [MasasasAPI.adminCreateUser] method
 Future<String> newUserJson(
   String password,
   String username,
@@ -22,6 +24,8 @@ Future<String> newUserJson(
 }
 """;
 
+/// Returns the json representation of an [UnsecuredTable] (server type)
+/// used in the [MasasasAPI.adminCreateTable] method
 String newTableJson(
   String location,
   String macAddress,

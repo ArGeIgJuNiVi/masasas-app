@@ -1,7 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:masasas_app/config.dart';
 
 class Settings extends StatefulWidget {
+  //global settings methods
+  //static var sharedPreferences;
+  static bool initialized = false;
+
+  static var api = (scheme: "http", host: "localhost", port: 5088);
+
+  static var guestCredentials = (id: "guest", password: "1234");
+
+  static init() async {
+    //sharedPreferences = null;
+    initialized = true;
+  }
+
+  static save() async {}
+
+  static load() async {} //TODO
+
+  //associated settings widget
   const Settings({super.key, required this.closeSettings});
 
   final Function() closeSettings;
@@ -14,8 +31,8 @@ class _SettingsState extends State<Settings> {
   final TextEditingController _hostController = TextEditingController();
 
   void updateConfig(_) {
-    Config.api = (host: _hostController.text, scheme: "http", port: 5088);
-    Config.guestCredentials = (id: "guest", password: "1234");
+    Settings.api = (host: _hostController.text, scheme: "http", port: 5088);
+    Settings.guestCredentials = (id: "guest", password: "1234");
   }
 
   @override

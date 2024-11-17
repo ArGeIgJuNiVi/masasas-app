@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:encrypt/encrypt.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart';
-import 'package:masasas_app/config.dart';
+import 'package:masasas_app/settings.dart';
 import 'package:masasas_app/data/error_messages.dart';
 import 'package:pointycastle/export.dart';
 
@@ -34,9 +34,9 @@ class MasasasApi {
       try {
         response = await _httpClient.get(
           Uri(
-            scheme: Config.api.scheme,
-            host: Config.api.host,
-            port: Config.api.port,
+            scheme: Settings.api.scheme,
+            host: Settings.api.host,
+            port: Settings.api.port,
             pathSegments: path,
           ),
         );
@@ -49,9 +49,9 @@ class MasasasApi {
       try {
         response = await _httpClient.post(
           Uri(
-            scheme: Config.api.scheme,
-            host: Config.api.host,
-            port: Config.api.port,
+            scheme: Settings.api.scheme,
+            host: Settings.api.host,
+            port: Settings.api.port,
             pathSegments: path,
           ),
           body: body,
