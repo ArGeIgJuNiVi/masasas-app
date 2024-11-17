@@ -3,10 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:masasas_app/login/login.dart';
 import 'package:masasas_app/settings.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
-  Settings.init();
+  await Settings.init();
 
   runApp(const MyApp());
 }

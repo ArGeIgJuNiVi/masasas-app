@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:masasas_app/masasas_api/api.dart';
 import 'package:masasas_app/height.dart';
+import 'package:masasas_app/settings.dart';
+import 'package:masasas_app/user_stats.dart';
 
 class TableManager extends StatefulWidget {
   const TableManager({
@@ -35,7 +37,9 @@ class _TableManagerState extends State<TableManager> {
   Map? _selectedTableData;
   Map? _userPreferences;
   int _retryCounter = 0;
-  String _tableUnit = "m";
+  String _tableUnit = Settings.app.defaultUnit;
+  final SessionStats _stats = SessionStats();
+  bool _statsOpen = false;
 
   double percentHeight() =>
       (_selectedTableData!["Data"]["CurrentHeight"] -
@@ -96,6 +100,11 @@ class _TableManagerState extends State<TableManager> {
         _retryCounter = 0;
         _selectedTableData = jsonDecode(tableJson.body);
         _userPreferences = jsonDecode(userPreferencesJson.body);
+        _stats.addDataPoint(
+          _selectedTableData!["Data"]["CurrentHeight"],
+          _selectedTableData!["Data"]["MinHeight"],
+          _selectedTableData!["Data"]["MaxHeight"],
+        );
         return setState(() {});
     }
   }
@@ -176,9 +185,6 @@ class _TableManagerState extends State<TableManager> {
 
     return Stack(
       children: [
-        BackButton(
-          onPressed: () => widget.deselectTable(),
-        ),
         Flex(
           direction: MediaQuery.of(context).size.aspectRatio > 3 / 4
               ? Axis.horizontal
@@ -214,8 +220,10 @@ class _TableManagerState extends State<TableManager> {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       IconButton(
+                        tooltip: "Raise table ${HeightValue(_tableUnit, 0.1)}",
                         onPressed: () => setTableHeight(
-                            _selectedTableData!["Data"]["CurrentHeight"] + 0.1),
+                          _selectedTableData!["Data"]["CurrentHeight"] + 0.1,
+                        ),
                         icon: const Icon(Icons.arrow_upward),
                       ),
                       SizedBox(
@@ -270,6 +278,8 @@ class _TableManagerState extends State<TableManager> {
                         ),
                       ),
                       IconButton(
+                        tooltip:
+                            "Lower table ${HeightValue(_tableUnit, 0.1)}  ",
                         onPressed: () => setTableHeight(
                             _selectedTableData!["Data"]["CurrentHeight"] - 0.1),
                         icon: const Icon(Icons.arrow_downward),
@@ -278,96 +288,175 @@ class _TableManagerState extends State<TableManager> {
                   ),
                 ),
                 DropdownButton(
-                    value: _tableUnit,
-                    items: const [
-                      DropdownMenuItem(value: "m", child: Text("m")),
-                      DropdownMenuItem(value: "cm", child: Text("cm")),
-                      DropdownMenuItem(value: "%", child: Text("%")),
-                      DropdownMenuItem(value: "burgers", child: Text("inch"))
-                    ],
-                    onChanged: (String? val) {
-                      setState(() => _tableUnit = val ?? "m");
-                    }),
+                  value: _tableUnit,
+                  items: const [
+                    DropdownMenuItem(value: "m", child: Text("m")),
+                    DropdownMenuItem(value: "cm", child: Text("cm")),
+                    DropdownMenuItem(value: "burgers", child: Text("inch"))
+                  ],
+                  onChanged: (String? val) {
+                    setState(() => _tableUnit = val ?? "m");
+                  },
+                ),
               ],
             ),
             Expanded(
               child: Card(
-                  child: Column(
-                children: [
-                  Expanded(
-                    child: Material(
-                      child: ReorderableListView.builder(
-                        buildDefaultDragHandles: false,
-                        onReorder: (oldIndex, newIndex) {
-                          if (newIndex > oldIndex) newIndex--;
-                          var tmp =
-                              _userPreferences!["HeightPresets"][oldIndex];
-                          _userPreferences!["HeightPresets"].removeAt(oldIndex);
-                          _userPreferences!["HeightPresets"]
-                              .insert(newIndex, tmp);
-                          savePresets(_userPreferences!["HeightPresets"]);
-                        },
-                        itemCount: _userPreferences!["HeightPresets"].length,
-                        itemBuilder: (context, index) => ListTile(
-                          key: Key(index.toString()),
-                          leading: _personalizationEnabled
-                              ? ReorderableDragStartListener(
-                                  enabled: _personalizationEnabled,
-                                  key: Key(index.toString()),
-                                  index: index,
-                                  child: const Icon(Icons.drag_handle),
-                                )
-                              : null,
-                          title: Text(HeightValue.fromJson(
-                                  _userPreferences!["HeightPresets"][index])
-                              .toString()),
-                          trailing: _personalizationEnabled
-                              ? IconButton(
-                                  onPressed: () {
-                                    List presets =
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(
+                              top: 12.0,
+                              left: 16.0,
+                              right: 16.0,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  "Presets:",
+                                  style: TextStyle(fontSize: 32),
+                                ),
+                                Visibility(
+                                  visible: _personalizationEnabled,
+                                  child: ElevatedButton.icon(
+                                    icon: const Icon(Icons.add),
+                                    label: const Text("Add preset"),
+                                    onPressed: () => showDialog<String>(
+                                      context: context,
+                                      builder: (BuildContext context) =>
+                                          DialogInput(addPreset: addPreset),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Expanded(
+                            child: ReorderableListView.builder(
+                              buildDefaultDragHandles: false,
+                              onReorder: (oldIndex, newIndex) {
+                                if (newIndex > oldIndex) newIndex--;
+                                var tmp = _userPreferences!["HeightPresets"]
+                                    [oldIndex];
+                                _userPreferences!["HeightPresets"]
+                                    .removeAt(oldIndex);
+                                _userPreferences!["HeightPresets"]
+                                    .insert(newIndex, tmp);
+                                savePresets(_userPreferences!["HeightPresets"]);
+                              },
+                              itemCount:
+                                  _userPreferences!["HeightPresets"].length,
+                              itemBuilder: (context, index) => ListTile(
+                                key: Key(index.toString()),
+                                leading: _personalizationEnabled
+                                    ? ReorderableDragStartListener(
+                                        enabled: _personalizationEnabled,
+                                        key: Key(index.toString()),
+                                        index: index,
+                                        child: const Icon(Icons.drag_handle),
+                                      )
+                                    : null,
+                                title: Text(HeightValue.fromJson(
                                         _userPreferences!["HeightPresets"]
-                                            .toList();
-                                    presets.removeAt(index);
-                                    savePresets(presets);
-                                  },
-                                  icon: const Icon(
-                                    Icons.delete,
-                                    color: Colors.red,
-                                  ))
-                              : null,
-                          onTap: () {
-                            setTableHeight(HeightValue.fromJson(
-                                    _userPreferences!["HeightPresets"][index])
-                                .toAbsoluteHeight(
-                                    _selectedTableData!["Data"]["MinHeight"],
-                                    _selectedTableData!["Data"]["MaxHeight"]));
-                          },
-                        ),
+                                            [index])
+                                    .toString()),
+                                trailing: _personalizationEnabled
+                                    ? IconButton(
+                                        onPressed: () {
+                                          List presets =
+                                              _userPreferences!["HeightPresets"]
+                                                  .toList();
+                                          presets.removeAt(index);
+                                          savePresets(presets);
+                                        },
+                                        icon: const Icon(
+                                          Icons.delete,
+                                          color: Colors.red,
+                                        ))
+                                    : null,
+                                onTap: () {
+                                  setTableHeight(HeightValue.fromJson(
+                                          _userPreferences!["HeightPresets"]
+                                              [index])
+                                      .toAbsoluteHeight(
+                                          _selectedTableData!["Data"]
+                                              ["MinHeight"],
+                                          _selectedTableData!["Data"]
+                                              ["MaxHeight"]));
+                                },
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                  Visibility(
-                    visible: _personalizationEnabled,
-                    child: ListTile(
-                      title: const Center(
-                        child: Text("Add preset"),
-                      ),
-                      onTap: () => showDialog<String>(
-                        context: context,
-                        builder: (BuildContext context) =>
-                            DialogInput(addPreset: addPreset),
-                      ),
-                    ),
-                  )
-                ],
-              )),
+                  ],
+                ),
+              ),
             ),
           ],
+        ),
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: Visibility(
+            visible: _statsOpen,
+            child: UserStats(
+              stats: _stats,
+              min: _selectedTableData!["Data"]["MinHeight"],
+              max: _selectedTableData!["Data"]["MaxHeight"],
+            ),
+          ),
+        ),
+        Positioned(
+          top: 0,
+          right: 0,
+          child: Visibility(
+            visible: Settings.tracking.enabled,
+            child: IconButton(
+              tooltip: "Stats",
+              onPressed: () => setState(() => _statsOpen = !_statsOpen),
+              icon: Icon(
+                Icons.line_axis,
+                color: _statsOpen ? Colors.red : null,
+              ),
+            ),
+          ),
+        ),
+        BackButton(
+          onPressed: () => widget.deselectTable(),
+        ),
+        AnimatedPositioned(
+          bottom: _stats.sittingTooLong &&
+                  _selectedTableData!["Data"]["CurrentHeight"] <
+                      Settings.tracking.sittingHeight.value
+              ? 0
+              : -100,
+          left: 0,
+          right: 0,
+          duration: Durations.medium1,
+          child: const Center(
+            child: Dialog(
+              child: Padding(
+                padding: EdgeInsets.all(8.0),
+                child: Text(
+                  "You have been sitting for a long time\nConsider standing",
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ),
         ),
       ],
     );
   }
-} //TODO button for stats + reminder with cooldown about raising the table
+}
 
 class DialogInput extends StatefulWidget {
   const DialogInput({super.key, required this.addPreset});
@@ -378,7 +467,7 @@ class DialogInput extends StatefulWidget {
 
 class _DialogState extends State<DialogInput> {
   final TextEditingController _presetController = TextEditingController();
-  String _presetUnit = "m";
+  String _presetUnit = Settings.app.defaultUnit;
 
   @override
   Widget build(BuildContext context) {

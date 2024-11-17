@@ -42,6 +42,8 @@ dependencies:
   pointycastle: ^3.9.1
   encrypt: ^5.0.3
   convert: ^3.1.2
+  wakelock_plus: ^1.2.8
+  fl_chart: ^0.69.0
 
 dev_dependencies:
   flutter_test:

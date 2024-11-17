@@ -9,13 +9,28 @@ class HeightValue {
   @override
   String toString() {
     return switch (unit) {
-      "m" => "${value.toStringAsFixed(2)} m",
-      "%" => "${(value * 100).toStringAsFixed(0)} %",
-      "cm" => "${(value * 100).toStringAsFixed(0)} cm",
-      "burgers" => "${(value / 0.0254).toStringAsFixed(0)} \"",
-      _ => "$value $unit",
+      "burgers" => "${toStringWithoutUnit()} \"",
+      _ => "${toStringWithoutUnit()} $unit",
     };
   }
+
+  String toStringWithoutUnit() {
+    return switch (unit) {
+      "m" => unitValue.toStringAsFixed(2),
+      "%" => unitValue.toStringAsFixed(0),
+      "cm" => unitValue.toStringAsFixed(0),
+      "burgers" => unitValue.toStringAsFixed(0),
+      _ => unitValue.toStringAsFixed(2),
+    };
+  }
+
+  num get unitValue => switch (unit) {
+        "m" => value,
+        "%" => (value * 100),
+        "cm" => (value * 100),
+        "burgers" => (value / 0.0254),
+        _ => value,
+      };
 
   num toAbsoluteHeight(num minHeight, num maxHeight) {
     return switch (unit) {
@@ -24,7 +39,7 @@ class HeightValue {
     };
   }
 
-  static adjusted(String unit, num value) {
+  static HeightValue adjusted(String unit, num value) {
     return HeightValue(
       unit,
       switch (unit) {

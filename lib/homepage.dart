@@ -243,6 +243,7 @@ class _HomepageState extends State<Homepage> {
             child: Visibility(
               visible: _admin,
               child: IconButton(
+                  tooltip: "Admin",
                   icon: const Icon(Icons.admin_panel_settings),
                   color: _adminMenuOpen ? Colors.red : null,
                   onPressed: () =>
@@ -255,6 +256,7 @@ class _HomepageState extends State<Homepage> {
             child: Visibility(
               visible: _selfDelete,
               child: IconButton(
+                tooltip: "Delete account",
                 icon: const Icon(Icons.delete),
                 color: Colors.red,
                 onPressed: () => showDialog<String>(

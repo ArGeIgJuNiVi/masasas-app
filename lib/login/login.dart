@@ -11,6 +11,7 @@ import 'package:masasas_app/login/login_user.dart';
 import 'package:masasas_app/settings.dart';
 import 'package:masasas_app/homepage.dart';
 import 'package:nfc_manager/nfc_manager.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 enum LoginPageMethod {
   NFC,
@@ -103,6 +104,7 @@ class _LoginState extends State<Login> {
   @override
   void initState() {
     checkNFC();
+    WakelockPlus.toggle(enable: Settings.app.keepScreenOn);
     super.initState();
   }
 

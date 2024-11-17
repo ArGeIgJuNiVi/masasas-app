@@ -220,6 +220,7 @@ class _AdminState extends State<Admin> {
         padding: const EdgeInsets.all(16.0),
         child: SingleChildScrollView(
           child: Wrap(
+            runSpacing: 32,
             alignment: WrapAlignment.spaceAround,
             children: [
               const Center(
@@ -271,6 +272,7 @@ class _AdminState extends State<Admin> {
                             labelText: 'Repeat password',
                             border: const OutlineInputBorder(),
                             suffixIcon: IconButton(
+                              tooltip: "Toggle visibility",
                               icon: Icon(
                                 _obscurePasswordRepeat
                                     ? Icons.visibility
