@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:masasas_app/api_json.dart';
-import 'package:masasas_app/api.dart';
+import 'package:masasas_app/masasas_api/api_json.dart';
+import 'package:masasas_app/masasas_api/api.dart';
 import 'package:masasas_app/nfc.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 
@@ -219,276 +219,277 @@ class _AdminState extends State<Admin> {
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: SingleChildScrollView(
-            child: Wrap(
-          alignment: WrapAlignment.spaceAround,
-          children: [
-            const Center(
-              child: Text(
-                "Admin menu",
-                style: TextStyle(
-                  fontSize: 32,
+          child: Wrap(
+            alignment: WrapAlignment.spaceAround,
+            children: [
+              const Center(
+                child: Text(
+                  "Admin menu",
+                  style: TextStyle(
+                    fontSize: 32,
+                  ),
                 ),
               ),
-            ),
-            SizedBox(
-              width: columnWidth,
-              child: Column(
-                children: [
-                  Wrap(
-                    runSpacing: 12,
-                    children: [
-                      const Text("Create user"),
-                      TextField(
-                        decoration: const InputDecoration(
-                          labelText: 'User id',
-                          border: OutlineInputBorder(),
-                        ),
-                        controller: _createUserID,
-                      ),
-                      TextField(
-                        obscureText: _obscurePassword,
-                        decoration: InputDecoration(
-                          labelText: 'Password',
-                          border: const OutlineInputBorder(),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility
-                                  : Icons.visibility_off,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _obscurePassword = !_obscurePassword;
-                              });
-                            },
+              SizedBox(
+                width: columnWidth,
+                child: Column(
+                  children: [
+                    Wrap(
+                      runSpacing: 12,
+                      children: [
+                        const Text("Create user"),
+                        TextField(
+                          decoration: const InputDecoration(
+                            labelText: 'User id',
+                            border: OutlineInputBorder(),
                           ),
+                          controller: _createUserID,
                         ),
-                        controller: _createUserPassword,
-                      ),
-                      TextField(
-                        obscureText: _obscurePasswordRepeat,
-                        decoration: InputDecoration(
-                          labelText: 'Repeat password',
-                          border: const OutlineInputBorder(),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePasswordRepeat
-                                  ? Icons.visibility
-                                  : Icons.visibility_off,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _obscurePasswordRepeat =
-                                    !_obscurePasswordRepeat;
-                              });
-                            },
-                          ),
-                        ),
-                        controller: _createUserPasswordRepeat,
-                      ),
-                      TextField(
-                        decoration: const InputDecoration(
-                          labelText: 'Alias',
-                          border: OutlineInputBorder(),
-                        ),
-                        onChanged: (_) => setState(() {}),
-                        controller: _createUserAlias,
-                      ),
-                      Visibility(
-                        visible: _createUserAlias.text.isEmpty,
-                        child: Column(
-                          children: [
-                            TextField(
-                              decoration: const InputDecoration(
-                                labelText: 'Username',
-                                border: OutlineInputBorder(),
+                        TextField(
+                          obscureText: _obscurePassword,
+                          decoration: InputDecoration(
+                            labelText: 'Password',
+                            border: const OutlineInputBorder(),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility
+                                    : Icons.visibility_off,
                               ),
-                              controller: _createUsername,
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
                             ),
-                            Row(
-                              children: [
-                                Checkbox(
-                                  value: _createUserAdministrator,
-                                  onChanged: (val) => setState(() =>
-                                      _createUserAdministrator =
-                                          val ?? _createUserAdministrator),
-                                ),
-                                const Text("Administrator"),
-                              ],
+                          ),
+                          controller: _createUserPassword,
+                        ),
+                        TextField(
+                          obscureText: _obscurePasswordRepeat,
+                          decoration: InputDecoration(
+                            labelText: 'Repeat password',
+                            border: const OutlineInputBorder(),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePasswordRepeat
+                                    ? Icons.visibility
+                                    : Icons.visibility_off,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePasswordRepeat =
+                                      !_obscurePasswordRepeat;
+                                });
+                              },
                             ),
-                            Row(
-                              children: [
-                                Checkbox(
-                                  value: _createUserAllowedPersonalization,
-                                  onChanged: (val) => setState(() =>
-                                      _createUserAllowedPersonalization = val ??
-                                          _createUserAllowedPersonalization),
+                          ),
+                          controller: _createUserPasswordRepeat,
+                        ),
+                        TextField(
+                          decoration: const InputDecoration(
+                            labelText: 'Alias',
+                            border: OutlineInputBorder(),
+                          ),
+                          onChanged: (_) => setState(() {}),
+                          controller: _createUserAlias,
+                        ),
+                        Visibility(
+                          visible: _createUserAlias.text.isEmpty,
+                          child: Column(
+                            children: [
+                              TextField(
+                                decoration: const InputDecoration(
+                                  labelText: 'Username',
+                                  border: OutlineInputBorder(),
                                 ),
-                                const Text("Allowed personalization"),
-                              ],
-                            ),
-                            Row(
-                              children: [
-                                Checkbox(
-                                  value: _createUserAllowedSelfDeletion,
-                                  onChanged: (val) => setState(() =>
-                                      _createUserAllowedSelfDeletion = val ??
-                                          _createUserAllowedSelfDeletion),
-                                ),
-                                const Text("Allowed self deletion"),
-                              ],
-                            )
+                                controller: _createUsername,
+                              ),
+                              Row(
+                                children: [
+                                  Checkbox(
+                                    value: _createUserAdministrator,
+                                    onChanged: (val) => setState(() =>
+                                        _createUserAdministrator =
+                                            val ?? _createUserAdministrator),
+                                  ),
+                                  const Text("Administrator"),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  Checkbox(
+                                    value: _createUserAllowedPersonalization,
+                                    onChanged: (val) => setState(() =>
+                                        _createUserAllowedPersonalization = val ??
+                                            _createUserAllowedPersonalization),
+                                  ),
+                                  const Text("Allowed personalization"),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  Checkbox(
+                                    value: _createUserAllowedSelfDeletion,
+                                    onChanged: (val) => setState(() =>
+                                        _createUserAllowedSelfDeletion = val ??
+                                            _createUserAllowedSelfDeletion),
+                                  ),
+                                  const Text("Allowed self deletion"),
+                                ],
+                              )
+                            ],
+                          ),
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: createUser,
+                          icon: const Icon(Icons.person),
+                          label: const Text("Create user"),
+                        )
+                      ],
+                    ),
+                    const SizedBox(
+                      height: 32,
+                    ),
+                    Wrap(
+                      runSpacing: 12,
+                      children: [
+                        const Text("Delete user"),
+                        TextField(
+                          decoration: const InputDecoration(
+                            labelText: 'User id',
+                            border: OutlineInputBorder(),
+                          ),
+                          controller: _deleteUserID,
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: deleteUser,
+                          icon: const Icon(Icons.person),
+                          label: const Text("Delete user"),
+                        )
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                width: columnWidth,
+                child: Column(
+                  children: [
+                    Wrap(
+                      runSpacing: 12,
+                      children: [
+                        const Text("Create table"),
+                        TextField(
+                          decoration: const InputDecoration(
+                            labelText: 'Table id',
+                            border: OutlineInputBorder(),
+                          ),
+                          controller: _createTableID,
+                        ),
+                        TextField(
+                          decoration: const InputDecoration(
+                            labelText: 'Location',
+                            border: OutlineInputBorder(),
+                          ),
+                          controller: _createTableLocation,
+                        ),
+                        TextField(
+                          decoration: const InputDecoration(
+                            labelText: 'Mac address',
+                            border: OutlineInputBorder(),
+                          ),
+                          controller: _createTableMacAddress,
+                        ),
+                        TextField(
+                          decoration: const InputDecoration(
+                            labelText: 'Manufacturer',
+                            border: OutlineInputBorder(),
+                          ),
+                          controller: _createTableManufacturer,
+                        ),
+                        TextField(
+                          onChanged: (value) => setState(
+                              () => _createTableCurrentHeight.text = value),
+                          controller: _createTableMinHeight,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          inputFormatters: <TextInputFormatter>[
+                            FilteringTextInputFormatter.allow(
+                                RegExp(r'^\d+\.?\d{0,2}'))
                           ],
+                          decoration: const InputDecoration(
+                            labelText: "Minimum table height",
+                            border: OutlineInputBorder(),
+                          ),
                         ),
-                      ),
-                      ElevatedButton.icon(
-                        onPressed: createUser,
-                        icon: const Icon(Icons.person),
-                        label: const Text("Create user"),
-                      )
-                    ],
-                  ),
-                  const SizedBox(
-                    height: 32,
-                  ),
-                  Wrap(
-                    runSpacing: 12,
-                    children: [
-                      const Text("Delete user"),
-                      TextField(
-                        decoration: const InputDecoration(
-                          labelText: 'User id',
-                          border: OutlineInputBorder(),
+                        TextField(
+                          controller: _createTableMaxHeight,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          inputFormatters: <TextInputFormatter>[
+                            FilteringTextInputFormatter.allow(
+                                RegExp(r'^\d+\.?\d{0,2}'))
+                          ],
+                          decoration: const InputDecoration(
+                            labelText: "Maximum table height",
+                            border: OutlineInputBorder(),
+                          ),
                         ),
-                        controller: _deleteUserID,
-                      ),
-                      ElevatedButton.icon(
-                        onPressed: deleteUser,
-                        icon: const Icon(Icons.person),
-                        label: const Text("Delete user"),
-                      )
-                    ],
-                  ),
-                ],
+                        TextField(
+                          controller: _createTableCurrentHeight,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          inputFormatters: <TextInputFormatter>[
+                            FilteringTextInputFormatter.allow(
+                                RegExp(r'^\d+\.?\d{0,2}'))
+                          ],
+                          decoration: const InputDecoration(
+                            labelText: "Current table height",
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                        TextField(
+                          decoration: const InputDecoration(
+                            labelText: 'Icon name',
+                            border: OutlineInputBorder(),
+                          ),
+                          controller: _createTableIcon,
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: createTable,
+                          icon: const Icon(Icons.person),
+                          label: const Text("Create table"),
+                        )
+                      ],
+                    ),
+                    const SizedBox(
+                      height: 32,
+                    ),
+                    Wrap(
+                      runSpacing: 12,
+                      children: [
+                        const Text("Delete table"),
+                        TextField(
+                          decoration: const InputDecoration(
+                            labelText: 'Table id',
+                            border: OutlineInputBorder(),
+                          ),
+                          controller: _deleteTableID,
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: deleteTable,
+                          icon: const Icon(Icons.person),
+                          label: const Text("Delete table"),
+                        )
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-            SizedBox(
-              width: columnWidth,
-              child: Column(
-                children: [
-                  Wrap(
-                    runSpacing: 12,
-                    children: [
-                      const Text("Create table"),
-                      TextField(
-                        decoration: const InputDecoration(
-                          labelText: 'Table id',
-                          border: OutlineInputBorder(),
-                        ),
-                        controller: _createTableID,
-                      ),
-                      TextField(
-                        decoration: const InputDecoration(
-                          labelText: 'Location',
-                          border: OutlineInputBorder(),
-                        ),
-                        controller: _createTableLocation,
-                      ),
-                      TextField(
-                        decoration: const InputDecoration(
-                          labelText: 'Mac address',
-                          border: OutlineInputBorder(),
-                        ),
-                        controller: _createTableMacAddress,
-                      ),
-                      TextField(
-                        decoration: const InputDecoration(
-                          labelText: 'Manufacturer',
-                          border: OutlineInputBorder(),
-                        ),
-                        controller: _createTableManufacturer,
-                      ),
-                      TextField(
-                        onChanged: (value) => setState(
-                            () => _createTableCurrentHeight.text = value),
-                        controller: _createTableMinHeight,
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        inputFormatters: <TextInputFormatter>[
-                          FilteringTextInputFormatter.allow(
-                              RegExp(r'^\d+\.?\d{0,2}'))
-                        ],
-                        decoration: const InputDecoration(
-                          labelText: "Minimum table height",
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      TextField(
-                        controller: _createTableMaxHeight,
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        inputFormatters: <TextInputFormatter>[
-                          FilteringTextInputFormatter.allow(
-                              RegExp(r'^\d+\.?\d{0,2}'))
-                        ],
-                        decoration: const InputDecoration(
-                          labelText: "Maximum table height",
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      TextField(
-                        controller: _createTableCurrentHeight,
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        inputFormatters: <TextInputFormatter>[
-                          FilteringTextInputFormatter.allow(
-                              RegExp(r'^\d+\.?\d{0,2}'))
-                        ],
-                        decoration: const InputDecoration(
-                          labelText: "Current table height",
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      TextField(
-                        decoration: const InputDecoration(
-                          labelText: 'Icon name',
-                          border: OutlineInputBorder(),
-                        ),
-                        controller: _createTableIcon,
-                      ),
-                      ElevatedButton.icon(
-                        onPressed: createTable,
-                        icon: const Icon(Icons.person),
-                        label: const Text("Create table"),
-                      )
-                    ],
-                  ),
-                  const SizedBox(
-                    height: 32,
-                  ),
-                  Wrap(
-                    runSpacing: 12,
-                    children: [
-                      const Text("Delete table"),
-                      TextField(
-                        decoration: const InputDecoration(
-                          labelText: 'Table id',
-                          border: OutlineInputBorder(),
-                        ),
-                        controller: _deleteTableID,
-                      ),
-                      ElevatedButton.icon(
-                        onPressed: deleteTable,
-                        icon: const Icon(Icons.person),
-                        label: const Text("Delete table"),
-                      )
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        )),
+            ],
+          ),
+        ),
       ),
     );
   }

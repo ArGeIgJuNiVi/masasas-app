@@ -6,7 +6,6 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:masasas_app/masasas_api/api.dart';
-import 'package:masasas_app/config.dart';
 import 'package:masasas_app/login/login_nfc.dart';
 import 'package:masasas_app/login/login_user.dart';
 import 'package:masasas_app/settings.dart';
@@ -133,7 +132,7 @@ class _LoginState extends State<Login> {
 
   @override
   Widget build(BuildContext context) {
-    if (_settingsOpen) return Settings(closeSettings: closeSettings);
+    if (_settingsOpen) return SettingsWidget(closeSettings: closeSettings);
 
     if (_userID != null && _userDailyAccessCode != null) {
       return Homepage(
@@ -187,13 +186,16 @@ class _LoginState extends State<Login> {
                         onPressed: () => setState(
                             () => _loginMethod = otherLoginMethods[index]),
                       ))),
-              FloatingActionButton.extended(
-                  label: const Text("Guest Login"),
-                  icon: const Icon(Icons.person),
-                  onPressed: () => setUserCredentials(
-                        Settings.guestCredentials.id,
-                        Settings.guestCredentials.password,
-                      )),
+              Visibility(
+                visible: Settings.guest.enabled,
+                child: FloatingActionButton.extended(
+                    label: const Text("Guest Login"),
+                    icon: const Icon(Icons.person),
+                    onPressed: () => setUserCredentials(
+                          Settings.guest.id,
+                          Settings.guest.password,
+                        )),
+              ),
             ],
           ),
         )

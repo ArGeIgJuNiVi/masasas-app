@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:masasas_app/api.dart';
+import 'package:masasas_app/masasas_api/api.dart';
 import 'package:masasas_app/height.dart';
 
 class TableManager extends StatefulWidget {
@@ -367,7 +367,7 @@ class _TableManagerState extends State<TableManager> {
       ],
     );
   }
-}
+} //TODO button for stats + reminder with cooldown about raising the table
 
 class DialogInput extends StatefulWidget {
   const DialogInput({super.key, required this.addPreset});
