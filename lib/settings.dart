@@ -10,30 +10,26 @@ abstract class Settings {
   static bool _initialized = false;
   static bool _waiting = false;
 
-  static var api = (
-    scheme: "http",
-    host: "localhost",
-    port: 5088,
-  );
+  static var apiScheme = "http";
+  static var apiHost = "localhost";
+  static var apiPort = 5088;
 
-  static var guest = (
-    enabled: true,
-    id: "guest",
-    password: "1234",
-  );
+  static var guestEnabled = true;
+  static var guestID = "guest";
+  static var guestPassword = "1234";
 
-  static var app = (
-    keepScreenOn: false,
-    defaultUnit: "m",
-  );
+  static var appKeepScreenOn = false;
+  static var appPresetPersonalization = true;
+  static var appDefaultUnit = "m";
+  static var appDefaultTable = "";
 
-  static var tracking = (
-    enabled: true,
-    maxMinutes: 480,
-    sittingReminder: true,
-    sittingTooLongMinutes: 120,
-    sittingHeight: HeightValue("m", 0.8),
-  );
+  static var trackingEnabled = true;
+  static var trackingGuest = false;
+  static var trackingMaxMinutes = 480;
+  static var trackingMaxSessions = 480;
+  static var trackingSittingReminder = true;
+  static var trackingSittingTooLongMinutes = 120;
+  static var trackingSittingHeight = HeightValue("m", 1.0);
 
   static Future init() async {
     try {
@@ -53,55 +49,75 @@ abstract class Settings {
         [
           sharedPreferences.setString(
             "apiScheme",
-            api.scheme,
+            apiScheme,
           ),
           sharedPreferences.setString(
             "apiHost",
-            api.host,
+            apiHost,
           ),
           sharedPreferences.setInt(
             "apiPort",
-            api.port,
+            apiPort,
           ),
           sharedPreferences.setBool(
             "guestEnabled",
-            guest.enabled,
+            guestEnabled,
           ),
           sharedPreferences.setString(
             "guestID",
-            guest.id,
+            guestID,
           ),
           sharedPreferences.setString(
             "guestPassword",
-            guest.password,
+            guestPassword,
           ),
           sharedPreferences.setBool(
             "appKeepScreenOn",
-            app.keepScreenOn,
+            appKeepScreenOn,
+          ),
+          sharedPreferences.setBool(
+            "appPresetPersonalization",
+            appPresetPersonalization,
+          ),
+          sharedPreferences.setString(
+            "appDefaultUnit",
+            appDefaultUnit,
+          ),
+          sharedPreferences.setString(
+            "appDefaultTable",
+            appDefaultTable,
           ),
           sharedPreferences.setBool(
             "trackingEnabled",
-            tracking.enabled,
+            trackingEnabled,
+          ),
+          sharedPreferences.setBool(
+            "trackingGuest",
+            trackingGuest,
           ),
           sharedPreferences.setInt(
             "trackingMaxMinutes",
-            tracking.maxMinutes,
+            trackingMaxMinutes,
+          ),
+          sharedPreferences.setInt(
+            "trackingMaxSessions",
+            trackingMaxSessions,
           ),
           sharedPreferences.setBool(
             "trackingSittingReminder",
-            tracking.sittingReminder,
+            trackingSittingReminder,
           ),
           sharedPreferences.setInt(
             "trackingSittingTooLongMinutes",
-            tracking.sittingTooLongMinutes,
+            trackingSittingTooLongMinutes,
           ),
           sharedPreferences.setString(
             "trackingSittingHeightUnit",
-            tracking.sittingHeight.unit,
+            trackingSittingHeight.unit,
           ),
           sharedPreferences.setDouble(
             "trackingSittingHeightValue",
-            tracking.sittingHeight.unitValue.toDouble(),
+            trackingSittingHeight.unitValue.toDouble(),
           ),
         ],
       );
@@ -111,39 +127,44 @@ abstract class Settings {
 
   static load() {
     if (_initialized && !_waiting) {
-      api = (
-        scheme: sharedPreferences.getString("apiScheme") ?? api.scheme,
-        host: sharedPreferences.getString("apiHost") ?? api.host,
-        port: sharedPreferences.getInt("apiPort") ?? api.port,
-      );
-      guest = (
-        enabled: sharedPreferences.getBool("guestEnabled") ?? guest.enabled,
-        id: sharedPreferences.getString("guestID") ?? guest.id,
-        password:
-            sharedPreferences.getString("guestPassword") ?? guest.password,
-      );
-      app = (
-        keepScreenOn:
-            sharedPreferences.getBool("appKeepScreenOn") ?? app.keepScreenOn,
-        defaultUnit:
-            sharedPreferences.getString("appDefaultUnit") ?? app.defaultUnit,
-      );
-      tracking = (
-        enabled: sharedPreferences.getBool("trackingSittingEnabled") ??
-            tracking.enabled,
-        maxMinutes: sharedPreferences.getInt("trackingMaxMinutes") ??
-            tracking.maxMinutes,
-        sittingReminder: sharedPreferences.getBool("trackingSittingReminder") ??
-            tracking.sittingReminder,
-        sittingTooLongMinutes:
-            sharedPreferences.getInt("trackingSittingTooLongMinutes") ??
-                tracking.sittingTooLongMinutes,
-        sittingHeight: HeightValue.adjusted(
-            sharedPreferences.getString("trackingSittingHeightUnit") ??
-                tracking.sittingHeight.unit,
-            sharedPreferences.getDouble("trackingSittingHeightValue") ??
-                tracking.sittingHeight.value),
-      );
+      apiScheme = sharedPreferences.getString("apiScheme") ?? apiScheme;
+      apiHost = sharedPreferences.getString("apiHost") ?? apiHost;
+      apiPort = sharedPreferences.getInt("apiPort") ?? apiPort;
+
+      guestEnabled = sharedPreferences.getBool("guestEnabled") ?? guestEnabled;
+      guestID = sharedPreferences.getString("guestID") ?? guestID;
+      guestPassword =
+          sharedPreferences.getString("guestPassword") ?? guestPassword;
+
+      appKeepScreenOn =
+          sharedPreferences.getBool("appKeepScreenOn") ?? appKeepScreenOn;
+      appPresetPersonalization =
+          sharedPreferences.getBool("appPresetPersonalization") ??
+              appPresetPersonalization;
+      appDefaultUnit =
+          sharedPreferences.getString("appDefaultUnit") ?? appDefaultUnit;
+      appDefaultTable =
+          sharedPreferences.getString("appDefaultTable") ?? appDefaultTable;
+
+      trackingEnabled =
+          sharedPreferences.getBool("trackingEnabled") ?? trackingEnabled;
+      trackingGuest =
+          sharedPreferences.getBool("trackingGuest") ?? trackingGuest;
+      trackingMaxMinutes =
+          sharedPreferences.getInt("trackingMaxMinutes") ?? trackingMaxMinutes;
+      trackingMaxSessions = sharedPreferences.getInt("trackingMaxSessions") ??
+          trackingMaxSessions;
+      trackingSittingReminder =
+          sharedPreferences.getBool("trackingSittingReminder") ??
+              trackingSittingReminder;
+      trackingSittingTooLongMinutes =
+          sharedPreferences.getInt("trackingSittingTooLongMinutes") ??
+              trackingSittingTooLongMinutes;
+      trackingSittingHeight = HeightValue.adjusted(
+          sharedPreferences.getString("trackingSittingHeightUnit") ??
+              trackingSittingHeight.unit,
+          sharedPreferences.getDouble("trackingSittingHeightValue") ??
+              trackingSittingHeight.value);
     }
   }
 }
@@ -159,73 +180,78 @@ class SettingsWidget extends StatefulWidget {
 
 class _SettingsWidgetState extends State<SettingsWidget> {
   final TextEditingController _apiHost =
-      TextEditingController(text: Settings.api.host);
+      TextEditingController(text: Settings.apiHost);
   final TextEditingController _apiScheme =
-      TextEditingController(text: Settings.api.scheme);
+      TextEditingController(text: Settings.apiScheme);
   final TextEditingController _apiPort =
-      TextEditingController(text: Settings.api.port.toString());
+      TextEditingController(text: Settings.apiPort.toString());
 
   bool _obscurePassword = true;
-  bool _guestEnabled = Settings.guest.enabled;
+  bool _guestEnabled = Settings.guestEnabled;
   final TextEditingController _guestID =
-      TextEditingController(text: Settings.guest.id);
+      TextEditingController(text: Settings.guestID);
   final TextEditingController _guestPassword =
-      TextEditingController(text: Settings.guest.password);
+      TextEditingController(text: Settings.guestPassword);
 
-  bool _appKeepScreenOn = Settings.app.keepScreenOn;
-  String _appDefaultUnit = Settings.app.defaultUnit;
+  bool _appKeepScreenOn = Settings.appKeepScreenOn;
+  bool _appPresetPersonalization = Settings.appPresetPersonalization;
+  String _appDefaultUnit = Settings.appDefaultUnit;
+  final TextEditingController _appDefaultTable =
+      TextEditingController(text: Settings.appDefaultTable);
 
-  bool _trackingEnabled = Settings.tracking.enabled;
+  bool _trackingEnabled = Settings.trackingEnabled;
+  bool _trackingGuest = Settings.trackingGuest;
   final TextEditingController _trackingMaxMinutes =
-      TextEditingController(text: Settings.tracking.maxMinutes.toString());
+      TextEditingController(text: Settings.trackingMaxMinutes.toString());
+  final TextEditingController _trackingMaxSessions =
+      TextEditingController(text: Settings.trackingMaxSessions.toString());
   final TextEditingController _trackingSittingHeightValue =
       TextEditingController(
-          text: Settings.tracking.sittingHeight.toStringWithoutUnit());
-  String _trackingSittingHeightUnit = Settings.tracking.sittingHeight.unit;
-  bool _trackingSittingReminder = Settings.tracking.sittingReminder;
+          text: Settings.trackingSittingHeight.toStringWithoutUnit());
+  String _trackingSittingHeightUnit = Settings.trackingSittingHeight.unit;
+  bool _trackingSittingReminder = Settings.trackingSittingReminder;
   final TextEditingController _trackingSittingTooLongMinutes =
       TextEditingController(
-          text: Settings.tracking.sittingTooLongMinutes.toString());
+          text: Settings.trackingSittingTooLongMinutes.toString());
 
   void updateConfig([_]) async {
-    Settings.api = (
-      host: _apiHost.text.isNotEmpty ? _apiHost.text : "localhost",
-      scheme: _apiScheme.text.isNotEmpty ? _apiScheme.text : "http",
-      port: int.parse(_apiPort.text.isNotEmpty ? _apiPort.text : "5088")
-    );
+    Settings.apiHost = _apiHost.text.isNotEmpty ? _apiHost.text : "localhost";
+    Settings.apiScheme = _apiScheme.text.isNotEmpty ? _apiScheme.text : "http";
+    Settings.apiPort =
+        int.parse(_apiPort.text.isNotEmpty ? _apiPort.text : "5088");
 
-    Settings.guest = (
-      enabled: _guestEnabled,
-      id: _guestID.text,
-      password: _guestPassword.text,
-    );
+    Settings.guestEnabled = _guestEnabled;
+    Settings.guestID = _guestID.text;
+    Settings.guestPassword = _guestPassword.text;
 
     WakelockPlus.toggle(enable: _appKeepScreenOn);
 
-    Settings.app = (
-      keepScreenOn: _appKeepScreenOn,
-      defaultUnit: _appDefaultUnit,
-    );
+    Settings.appKeepScreenOn = _appKeepScreenOn;
+    Settings.appPresetPersonalization = _appPresetPersonalization;
+    Settings.appDefaultUnit = _appDefaultUnit;
+    Settings.appDefaultTable = _appDefaultTable.text;
 
-    Settings.tracking = (
-      enabled: _trackingEnabled,
-      maxMinutes: int.parse(
-        _trackingMaxMinutes.text.isNotEmpty ? _trackingMaxMinutes.text : "120",
-      ),
-      sittingReminder: _trackingSittingReminder,
-      sittingTooLongMinutes: int.parse(
-        _trackingSittingTooLongMinutes.text.isNotEmpty
-            ? _trackingSittingTooLongMinutes.text
-            : "480",
-      ),
-      sittingHeight: HeightValue.adjusted(
-          _trackingSittingHeightUnit,
-          num.parse(
-            _trackingSittingHeightValue.text.isNotEmpty
-                ? _trackingSittingHeightValue.text
-                : "0.8",
-          )),
+    Settings.trackingEnabled = _trackingEnabled;
+    Settings.trackingGuest = _trackingGuest;
+    Settings.trackingMaxMinutes = int.parse(
+      _trackingMaxMinutes.text.isNotEmpty ? _trackingMaxMinutes.text : "120",
     );
+    Settings.trackingMaxSessions = int.parse(
+      _trackingMaxSessions.text.isNotEmpty ? _trackingMaxSessions.text : "120",
+    );
+    Settings.trackingSittingReminder = _trackingSittingReminder;
+    Settings.trackingSittingTooLongMinutes = int.parse(
+      _trackingSittingTooLongMinutes.text.isNotEmpty
+          ? _trackingSittingTooLongMinutes.text
+          : "480",
+    );
+    Settings.trackingSittingHeight = HeightValue.adjusted(
+        _trackingSittingHeightUnit,
+        num.parse(
+          _trackingSittingHeightValue.text.isNotEmpty
+              ? _trackingSittingHeightValue.text
+              : "0.8",
+        ));
 
     await Settings.save();
     setState(() {});
@@ -311,6 +337,19 @@ class _SettingsWidgetState extends State<SettingsWidget> {
                         ),
                         Row(
                           children: [
+                            Checkbox(
+                              value: _appPresetPersonalization,
+                              onChanged: (_) {
+                                _appPresetPersonalization =
+                                    !_appPresetPersonalization;
+                                updateConfig();
+                              },
+                            ),
+                            const Text("Preset personalization"),
+                          ],
+                        ),
+                        Row(
+                          children: [
                             const Text("Default unit:"),
                             Padding(
                               padding: const EdgeInsets.only(left: 16.0),
@@ -326,12 +365,20 @@ class _SettingsWidgetState extends State<SettingsWidget> {
                                 ],
                                 onChanged: (String? val) {
                                   _appDefaultUnit =
-                                      val ?? Settings.app.defaultUnit;
+                                      val ?? Settings.appDefaultUnit;
                                   updateConfig();
                                 },
                               ),
                             ),
                           ],
+                        ),
+                        TextField(
+                          decoration: const InputDecoration(
+                            labelText: 'Default table',
+                            border: OutlineInputBorder(),
+                          ),
+                          controller: _appDefaultTable,
+                          onChanged: updateConfig,
                         ),
                       ],
                     ),
@@ -415,6 +462,21 @@ class _SettingsWidgetState extends State<SettingsWidget> {
                         ),
                         Visibility(
                           visible: _trackingEnabled,
+                          child: Row(
+                            children: [
+                              Checkbox(
+                                value: _trackingGuest,
+                                onChanged: (_) {
+                                  _trackingGuest = !_trackingGuest;
+                                  updateConfig();
+                                },
+                              ),
+                              const Text("Track guest"),
+                            ],
+                          ),
+                        ),
+                        Visibility(
+                          visible: _trackingEnabled,
                           child: TextField(
                             keyboardType: const TextInputType.numberWithOptions(
                                 decimal: true),
@@ -425,6 +487,22 @@ class _SettingsWidgetState extends State<SettingsWidget> {
                             onChanged: updateConfig,
                             decoration: const InputDecoration(
                               labelText: "Max minutes",
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ),
+                        Visibility(
+                          visible: _trackingEnabled,
+                          child: TextField(
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
+                            inputFormatters: <TextInputFormatter>[
+                              FilteringTextInputFormatter.digitsOnly
+                            ],
+                            controller: _trackingMaxSessions,
+                            onChanged: updateConfig,
+                            decoration: const InputDecoration(
+                              labelText: "Max sessions count",
                               border: OutlineInputBorder(),
                             ),
                           ),
@@ -484,14 +562,14 @@ class _SettingsWidgetState extends State<SettingsWidget> {
                                     onChanged: (String? val) {
                                       if (_trackingSittingHeightUnit == "%" ||
                                           val == "%") {
-                                        Settings.tracking.sittingHeight.value =
+                                        Settings.trackingSittingHeight.value =
                                             0;
                                       }
                                       _trackingSittingHeightUnit = val ?? "m";
                                       _trackingSittingHeightValue.text =
                                           HeightValue(
                                         _trackingSittingHeightUnit,
-                                        Settings.tracking.sittingHeight.value,
+                                        Settings.trackingSittingHeight.value,
                                       ).toStringWithoutUnit();
                                       updateConfig();
                                     }),

@@ -14,18 +14,18 @@ class TableManager extends StatefulWidget {
     super.key,
     required this.deselectTable,
     required this.selectedTableID,
-    required this.selectedTableDailyAccessCode,
+    required this.selectedTableDailyAccessCodeRSA,
     required this.userID,
-    required this.userDailyAccessCode,
+    required this.userDailyAccessCodeRSA,
     required this.invalidateUserCredentials,
   });
 
   final Function([String]) deselectTable;
   final Function([String]) invalidateUserCredentials;
   final String selectedTableID;
-  final String selectedTableDailyAccessCode;
+  final String selectedTableDailyAccessCodeRSA;
   final String userID;
-  final String userDailyAccessCode;
+  final String userDailyAccessCodeRSA;
 
   @override
   State<TableManager> createState() => _TableManagerState();
@@ -37,8 +37,9 @@ class _TableManagerState extends State<TableManager> {
   Map? _selectedTableData;
   Map? _userPreferences;
   int _retryCounter = 0;
-  String _tableUnit = Settings.app.defaultUnit;
-  final SessionStats _stats = SessionStats();
+  String _tableUnit = Settings.appDefaultUnit;
+  Map<String, SessionStats> _sessions = {};
+  final String _currentSession = DateTime.now().toString();
   bool _statsOpen = false;
 
   double percentHeight() =>
@@ -48,30 +49,32 @@ class _TableManagerState extends State<TableManager> {
           _selectedTableData!["Data"]["MinHeight"]);
 
   void checkPersonalization() async {
-    MasasasResponse personalizationJson =
-        await MasasasApi.getUserPersonalizationState(
-            widget.userID, widget.userDailyAccessCode);
+    if (Settings.appPresetPersonalization) {
+      MasasasResponse personalizationJson =
+          await MasasasApi.getUserPersonalizationState(
+              widget.userID, widget.userDailyAccessCodeRSA);
 
-    switch (personalizationJson.result) {
-      case MasasasResult.ok:
-        _personalizationEnabled =
-            bool.parse(personalizationJson.body, caseSensitive: false);
-        setState(() {});
-        return;
-      case MasasasResult.badRequest:
-        widget.invalidateUserCredentials(personalizationJson.body);
-        return;
-      case MasasasResult.connectionError:
-        widget.deselectTable(personalizationJson.body);
-        return;
+      switch (personalizationJson.result) {
+        case MasasasResult.ok:
+          _personalizationEnabled =
+              bool.parse(personalizationJson.body, caseSensitive: false);
+          setState(() {});
+          return;
+        case MasasasResult.badRequest:
+          widget.invalidateUserCredentials(personalizationJson.body);
+          return;
+        case MasasasResult.connectionError:
+          widget.deselectTable(personalizationJson.body);
+          return;
+      }
     }
   }
 
   void updateData([Timer? state]) async {
     MasasasResponse tableJson = await MasasasApi.getTableData(
-        widget.selectedTableID, widget.selectedTableDailyAccessCode);
+        widget.selectedTableID, widget.selectedTableDailyAccessCodeRSA);
     MasasasResponse userPreferencesJson = await MasasasApi.getUserPreferences(
-        widget.userID, widget.userDailyAccessCode);
+        widget.userID, widget.userDailyAccessCodeRSA);
 
     switch ((tableJson.result, userPreferencesJson.result)) {
       case (MasasasResult.connectionError, _):
@@ -88,19 +91,19 @@ class _TableManagerState extends State<TableManager> {
         }
         return;
 
-      case (MasasasResult.badRequest, _):
-        widget.invalidateUserCredentials(tableJson.body);
-        return;
-
       case (_, MasasasResult.badRequest):
         widget.invalidateUserCredentials(userPreferencesJson.body);
+        return;
+
+      case (MasasasResult.badRequest, _):
+        widget.deselectTable(tableJson.body);
         return;
 
       case (MasasasResult.ok, MasasasResult.ok):
         _retryCounter = 0;
         _selectedTableData = jsonDecode(tableJson.body);
         _userPreferences = jsonDecode(userPreferencesJson.body);
-        _stats.addDataPoint(
+        _sessions[_currentSession]!.addDataPoint(
           _selectedTableData!["Data"]["CurrentHeight"],
           _selectedTableData!["Data"]["MinHeight"],
           _selectedTableData!["Data"]["MaxHeight"],
@@ -111,21 +114,37 @@ class _TableManagerState extends State<TableManager> {
 
   @override
   void initState() {
-    checkPersonalization();
+    _sessions = (jsonDecode(Settings.sharedPreferences
+                .getString("${widget.userID}-PastSessions") ??
+            "{}") as Map)
+        .map((key, value) =>
+            MapEntry(key, SessionStats.fromJson(jsonDecode(value))));
+    _sessions[_currentSession] = SessionStats();
     updateData();
+    checkPersonalization();
     _updateData = Timer.periodic(const Duration(seconds: 1), updateData);
     super.initState();
   }
 
   @override
   void dispose() {
+    while (_sessions.length > Settings.trackingMaxSessions) {
+      _sessions.remove(_sessions.keys.first);
+    }
+    //only save sessions if not the guest user or if guest tracking is enabled
+    if (widget.userID != Settings.guestID || Settings.trackingGuest) {
+      Settings.sharedPreferences.setString(
+          "${widget.userID}-PastSessions",
+          jsonEncode(_sessions
+              .map((key, val) => MapEntry(key, jsonEncode(val.toJson())))));
+    }
     _updateData?.cancel();
     super.dispose();
   }
 
   void setTableHeight(num val) async {
     MasasasResponse tableHeightString = await MasasasApi.setTableHeight(
-        widget.selectedTableID, widget.selectedTableDailyAccessCode, val);
+        widget.selectedTableID, widget.selectedTableDailyAccessCodeRSA, val);
     switch (tableHeightString.result) {
       case MasasasResult.ok:
         _selectedTableData!["Data"]["CurrentHeight"] =
@@ -142,7 +161,7 @@ class _TableManagerState extends State<TableManager> {
     }
   }
 
-  void addPreset(HeightValue val) {
+  void addPreset(PresetValue val) {
     savePresets(
         List.from(_userPreferences!["HeightPresets"])..add(val.toJson()));
   }
@@ -151,7 +170,7 @@ class _TableManagerState extends State<TableManager> {
     Map preferences = Map.from(_userPreferences!);
     preferences["HeightPresets"] = presets;
     MasasasResponse preferencesJson = await MasasasApi.setPreferences(
-        widget.userID, widget.userDailyAccessCode, jsonEncode(preferences));
+        widget.userID, widget.userDailyAccessCodeRSA, jsonEncode(preferences));
 
     switch (preferencesJson.result) {
       case MasasasResult.ok:
@@ -322,7 +341,7 @@ class _TableManagerState extends State<TableManager> {
                                 ),
                                 Visibility(
                                   visible: _personalizationEnabled,
-                                  child: ElevatedButton.icon(
+                                  child: OutlinedButton.icon(
                                     icon: const Icon(Icons.add),
                                     label: const Text("Add preset"),
                                     onPressed: () => showDialog<String>(
@@ -350,45 +369,50 @@ class _TableManagerState extends State<TableManager> {
                               },
                               itemCount:
                                   _userPreferences!["HeightPresets"].length,
-                              itemBuilder: (context, index) => ListTile(
-                                key: Key(index.toString()),
-                                leading: _personalizationEnabled
-                                    ? ReorderableDragStartListener(
-                                        enabled: _personalizationEnabled,
-                                        key: Key(index.toString()),
-                                        index: index,
-                                        child: const Icon(Icons.drag_handle),
-                                      )
-                                    : null,
-                                title: Text(HeightValue.fromJson(
+                              itemBuilder: (context, index) {
+                                PresetValue preset = PresetValue.fromJson(
+                                    _userPreferences!["HeightPresets"][index]);
+                                return ListTile(
+                                  key: Key(index.toString()),
+                                  leading: _personalizationEnabled
+                                      ? ReorderableDragStartListener(
+                                          enabled: _personalizationEnabled,
+                                          key: Key(index.toString()),
+                                          index: index,
+                                          child: const Icon(Icons.drag_handle),
+                                        )
+                                      : null,
+                                  title: Text(
+                                      preset.name ?? preset.height.toString()),
+                                  trailing: _personalizationEnabled
+                                      ? IconButton(
+                                          onPressed: () {
+                                            List presets = _userPreferences![
+                                                    "HeightPresets"]
+                                                .toList();
+                                            presets.removeAt(index);
+                                            savePresets(presets);
+                                          },
+                                          icon: const Icon(
+                                            Icons.delete,
+                                            color: Colors.red,
+                                          ))
+                                      : null,
+                                  onTap: () {
+                                    setTableHeight(
+                                      PresetValue.fromJson(
                                         _userPreferences!["HeightPresets"]
-                                            [index])
-                                    .toString()),
-                                trailing: _personalizationEnabled
-                                    ? IconButton(
-                                        onPressed: () {
-                                          List presets =
-                                              _userPreferences!["HeightPresets"]
-                                                  .toList();
-                                          presets.removeAt(index);
-                                          savePresets(presets);
-                                        },
-                                        icon: const Icon(
-                                          Icons.delete,
-                                          color: Colors.red,
-                                        ))
-                                    : null,
-                                onTap: () {
-                                  setTableHeight(HeightValue.fromJson(
-                                          _userPreferences!["HeightPresets"]
-                                              [index])
-                                      .toAbsoluteHeight(
-                                          _selectedTableData!["Data"]
-                                              ["MinHeight"],
-                                          _selectedTableData!["Data"]
-                                              ["MaxHeight"]));
-                                },
-                              ),
+                                            [index],
+                                      ).height.toAbsoluteHeight(
+                                            _selectedTableData!["Data"]
+                                                ["MinHeight"],
+                                            _selectedTableData!["Data"]
+                                                ["MaxHeight"],
+                                          ),
+                                    );
+                                  },
+                                );
+                              },
                             ),
                           ),
                         ],
@@ -400,6 +424,9 @@ class _TableManagerState extends State<TableManager> {
             ),
           ],
         ),
+        BackButton(
+          onPressed: () => widget.deselectTable(),
+        ),
         Positioned(
           top: 0,
           left: 0,
@@ -408,7 +435,8 @@ class _TableManagerState extends State<TableManager> {
           child: Visibility(
             visible: _statsOpen,
             child: UserStats(
-              stats: _stats,
+              sessions: _sessions,
+              currentSession: _currentSession,
               min: _selectedTableData!["Data"]["MinHeight"],
               max: _selectedTableData!["Data"]["MaxHeight"],
             ),
@@ -418,7 +446,7 @@ class _TableManagerState extends State<TableManager> {
           top: 0,
           right: 0,
           child: Visibility(
-            visible: Settings.tracking.enabled,
+            visible: Settings.trackingEnabled,
             child: IconButton(
               tooltip: "Stats",
               onPressed: () => setState(() => _statsOpen = !_statsOpen),
@@ -429,13 +457,10 @@ class _TableManagerState extends State<TableManager> {
             ),
           ),
         ),
-        BackButton(
-          onPressed: () => widget.deselectTable(),
-        ),
         AnimatedPositioned(
-          bottom: _stats.sittingTooLong &&
+          bottom: _sessions[_currentSession]!.sittingTooLong &&
                   _selectedTableData!["Data"]["CurrentHeight"] <
-                      Settings.tracking.sittingHeight.value
+                      Settings.trackingSittingHeight.value
               ? 0
               : -100,
           left: 0,
@@ -460,14 +485,16 @@ class _TableManagerState extends State<TableManager> {
 
 class DialogInput extends StatefulWidget {
   const DialogInput({super.key, required this.addPreset});
-  final Function(HeightValue) addPreset;
+  final Function(PresetValue) addPreset;
   @override
   State<DialogInput> createState() => _DialogState();
 }
 
 class _DialogState extends State<DialogInput> {
-  final TextEditingController _presetController = TextEditingController();
-  String _presetUnit = Settings.app.defaultUnit;
+  final TextEditingController _presetValueController = TextEditingController(
+      text: HeightValue(Settings.appDefaultUnit, 1.0).toStringWithoutUnit());
+  final TextEditingController _presetNameController = TextEditingController();
+  String _presetUnit = Settings.appDefaultUnit;
 
   @override
   Widget build(BuildContext context) {
@@ -486,7 +513,7 @@ class _DialogState extends State<DialogInput> {
                   SizedBox(
                     width: 200,
                     child: TextField(
-                      controller: _presetController,
+                      controller: _presetValueController,
                       keyboardType:
                           const TextInputType.numberWithOptions(decimal: true),
                       inputFormatters: <TextInputFormatter>[
@@ -500,7 +527,7 @@ class _DialogState extends State<DialogInput> {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     child: DropdownButton(
                         value: _presetUnit,
                         items: const [
@@ -517,24 +544,39 @@ class _DialogState extends State<DialogInput> {
                 ],
               ),
             ),
+            SizedBox(
+              width: 290,
+              child: TextField(
+                controller: _presetNameController,
+                decoration: const InputDecoration(
+                  labelText: "Preset Name",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
             const SizedBox(height: 15),
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextButton(
+                OutlinedButton(
                   onPressed: () {
                     widget.addPreset(
-                      HeightValue.adjusted(
-                          _presetUnit, double.parse(_presetController.text)),
+                      PresetValue(
+                        HeightValue.adjusted(
+                          _presetUnit,
+                          double.parse(_presetValueController.text),
+                        ),
+                        _presetNameController.text.isNotEmpty
+                            ? _presetNameController.text
+                            : null,
+                      ),
                     );
                     Navigator.pop(context);
                   },
                   child: const Text('Ok'),
                 ),
-                const SizedBox(
-                  width: 64,
-                ),
-                TextButton(
+                const SizedBox(width: 48),
+                OutlinedButton(
                   onPressed: () {
                     Navigator.pop(context);
                   },

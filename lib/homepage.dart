@@ -6,19 +6,20 @@ import 'package:flutter/material.dart';
 import 'package:masasas_app/admin.dart';
 import 'package:masasas_app/masasas_api/api.dart';
 import 'package:masasas_app/data/table_icons.dart';
+import 'package:masasas_app/settings.dart';
 import 'package:masasas_app/table_manager.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage(
       {super.key,
       required this.userID,
-      required this.userDailyAccessCode,
+      required this.userDailyAccessCodeRSA,
       required this.invalidateUserCredentials,
       required this.showError,
       required this.nfcAvailable,
       required this.showConfirmation});
   final String userID;
-  final String userDailyAccessCode;
+  final String userDailyAccessCodeRSA;
   final Function([String]) invalidateUserCredentials;
   final Function(String, double) showError;
   final Function(String, double) showConfirmation;
@@ -34,21 +35,22 @@ class _HomepageState extends State<Homepage> {
   Timer? _updateData;
   List? _tables;
   String? _selectedTableID;
-  String? _selectedTableDailyAccessCode;
+  String? _selectedTableDailyAccessCodeRSA;
   Map? _userPreferences;
   bool _admin = false;
   bool _selfDelete = false;
   bool _adminMenuOpen = false;
+  bool _loadedTableOnce = false;
 
   void updateData([Timer? state]) async {
-    MasasasResponse tablesJson =
-        await MasasasApi.getTables(widget.userID, widget.userDailyAccessCode);
+    MasasasResponse tablesJson = await MasasasApi.getTables(
+        widget.userID, widget.userDailyAccessCodeRSA);
     MasasasResponse userPreferencesJson = await MasasasApi.getUserPreferences(
-        widget.userID, widget.userDailyAccessCode);
+        widget.userID, widget.userDailyAccessCodeRSA);
     MasasasResponse adminString =
-        await MasasasApi.adminGet(widget.userID, widget.userDailyAccessCode);
+        await MasasasApi.adminGet(widget.userID, widget.userDailyAccessCodeRSA);
     MasasasResponse deleteString = await MasasasApi.getUserSelfDeletionState(
-        widget.userID, widget.userDailyAccessCode);
+        widget.userID, widget.userDailyAccessCodeRSA);
 
     switch ((
       tablesJson.result,
@@ -103,13 +105,51 @@ class _HomepageState extends State<Homepage> {
         _admin = bool.parse(adminString.body, caseSensitive: false);
         _selfDelete = bool.parse(deleteString.body, caseSensitive: false) &&
             !_admin; //no self deletion for admins
+        if (!_loadedTableOnce && Settings.appDefaultTable.isNotEmpty) {
+          try {
+            var table = _tables!
+                .where((val) => val["ID"] == Settings.appDefaultTable)
+                .first;
+            await selectTable(table["ID"], table["DailyAccessCode"]);
+          } catch (e) {
+            widget.showError(
+              "Table ${Settings.appDefaultTable} does not exist",
+              16,
+            );
+            Settings.appDefaultTable = "";
+            await Settings.save();
+          }
+        }
+        _loadedTableOnce = true;
         return setState(() {});
     }
   }
 
+  Future selectTable(String id, String dailyAccessCode) async {
+    MasasasResponse encryptedDailyAccessCode = await MasasasApi.rsaEncrypt(
+      dailyAccessCode,
+    );
+
+    switch (encryptedDailyAccessCode.result) {
+      case MasasasResult.ok:
+        _selectedTableDailyAccessCodeRSA = encryptedDailyAccessCode.body;
+        break;
+      default:
+        widget.invalidateUserCredentials(encryptedDailyAccessCode.body);
+        return;
+    }
+
+    setState(
+      () {
+        _updateData!.cancel();
+        _selectedTableID = id;
+      },
+    );
+  }
+
   void deselectTable([String? error]) {
     _selectedTableID = null;
-    _selectedTableDailyAccessCode = null;
+    _selectedTableDailyAccessCodeRSA = null;
 
     updateData();
     _updateData = Timer.periodic(const Duration(seconds: 5), updateData);
@@ -123,7 +163,7 @@ class _HomepageState extends State<Homepage> {
 
   void deleteUser() async {
     MasasasResponse deletionString = await MasasasApi.deleteUserSelf(
-        widget.userID, widget.userDailyAccessCode);
+        widget.userID, widget.userDailyAccessCodeRSA);
 
     switch (deletionString.result) {
       case MasasasResult.ok:
@@ -153,18 +193,18 @@ class _HomepageState extends State<Homepage> {
 
   @override
   Widget build(BuildContext context) {
-    if (_tables == null) {
+    if (_tables == null || !_loadedTableOnce) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (_selectedTableID != null && _selectedTableDailyAccessCode != null) {
+    if (_selectedTableID != null && _selectedTableDailyAccessCodeRSA != null) {
       return TableManager(
         invalidateUserCredentials: widget.invalidateUserCredentials,
         deselectTable: deselectTable,
         selectedTableID: _selectedTableID!,
-        selectedTableDailyAccessCode: _selectedTableDailyAccessCode!,
+        selectedTableDailyAccessCodeRSA: _selectedTableDailyAccessCodeRSA!,
         userID: widget.userID,
-        userDailyAccessCode: widget.userDailyAccessCode,
+        userDailyAccessCodeRSA: widget.userDailyAccessCodeRSA,
       );
     } else {
       return Stack(
@@ -203,19 +243,16 @@ class _HomepageState extends State<Homepage> {
                       leading: deskIcon[_tables![index]["Data"]["Icon"]],
                       title: Text(_tables![index]["Data"]["Location"]),
                       subtitle: Text(_tables![index]["ID"]),
-                      onTap: () => setState(
-                        () {
-                          _updateData!.cancel();
-                          _selectedTableID = _tables![index]["ID"];
-                          _selectedTableDailyAccessCode =
-                              _tables![index]["DailyAccessCode"];
-                        },
-                      ),
+                      onTap: () => selectTable(_tables![index]["ID"],
+                          _tables![index]["DailyAccessCode"]),
                     ),
                   ),
                 ),
               ),
             ],
+          ),
+          BackButton(
+            onPressed: () => widget.invalidateUserCredentials(),
           ),
           Positioned(
             top: 0,
@@ -230,12 +267,9 @@ class _HomepageState extends State<Homepage> {
                 showConfirmation: widget.showConfirmation,
                 nfcAvailable: widget.nfcAvailable,
                 adminID: widget.userID,
-                adminDailyAccessCode: widget.userDailyAccessCode,
+                adminDailyAccessCodeRSA: widget.userDailyAccessCodeRSA,
               ),
             ),
-          ),
-          BackButton(
-            onPressed: () => widget.invalidateUserCredentials(),
           ),
           Positioned(
             top: 0,
@@ -277,17 +311,20 @@ class _HomepageState extends State<Homepage> {
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              TextButton(
-                                  onPressed: () {
-                                    Navigator.pop(context);
-                                  },
-                                  child: const Text("No")),
-                              TextButton(
-                                  onPressed: () {
-                                    deleteUser();
-                                    Navigator.pop(context);
-                                  },
-                                  child: const Text("Yes"))
+                              OutlinedButton(
+                                onPressed: () {
+                                  deleteUser();
+                                  Navigator.pop(context);
+                                },
+                                child: const Text("Yes"),
+                              ),
+                              const SizedBox(width: 48),
+                              OutlinedButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                },
+                                child: const Text("No"),
+                              ),
                             ],
                           )
                         ],

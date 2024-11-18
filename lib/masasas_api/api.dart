@@ -34,9 +34,9 @@ class MasasasApi {
       try {
         response = await _httpClient.get(
           Uri(
-            scheme: Settings.api.scheme,
-            host: Settings.api.host,
-            port: Settings.api.port,
+            scheme: Settings.apiScheme,
+            host: Settings.apiHost,
+            port: Settings.apiPort,
             pathSegments: path,
           ),
         );
@@ -49,9 +49,9 @@ class MasasasApi {
       try {
         response = await _httpClient.post(
           Uri(
-            scheme: Settings.api.scheme,
-            host: Settings.api.host,
-            port: Settings.api.port,
+            scheme: Settings.apiScheme,
+            host: Settings.apiHost,
+            port: Settings.apiPort,
             pathSegments: path,
           ),
           body: body,
@@ -120,9 +120,9 @@ class MasasasApi {
   /// - Bad Request errors -
   /// "Invalid user id or daily access code"
   static Future<MasasasResponse> getUserPreferences(
-          String userID, String userDailyAccessCode) async =>
+          String userID, String userDailyAccessCodeRSA) async =>
       await _handleRequest(
-          ["user", userID, userDailyAccessCode, "get_preferences"], null);
+          ["user", userID, userDailyAccessCodeRSA, "get_preferences"], null);
 
   /// ```text
   /// Get if the user is able to set preferences
@@ -133,9 +133,9 @@ class MasasasApi {
   /// Bad Request errors:
   /// "Invalid user id or daily access code"
   static Future<MasasasResponse> getUserPersonalizationState(
-          String userID, String userDailyAccessCode) async =>
+          String userID, String userDailyAccessCodeRSA) async =>
       await _handleRequest(
-          ["user", userID, userDailyAccessCode, "get_personalization_state"],
+          ["user", userID, userDailyAccessCodeRSA, "get_personalization_state"],
           null);
 
   /// ```text
@@ -147,9 +147,9 @@ class MasasasApi {
   /// Bad Request errors:
   /// "Invalid user id or daily access code"
   static Future<MasasasResponse> getUserSelfDeletionState(
-          String userID, String userDailyAccessCode) async =>
+          String userID, String userDailyAccessCodeRSA) async =>
       await _handleRequest(
-          ["user", userID, userDailyAccessCode, "get_personalization_state"],
+          ["user", userID, userDailyAccessCodeRSA, "get_personalization_state"],
           null);
 
   /// ```text
@@ -161,9 +161,9 @@ class MasasasApi {
   /// - Bad Request errors -
   /// "Invalid user id or daily access code"
   static Future<MasasasResponse> getTables(
-          String userID, String userDailyAccessCode) async =>
+          String userID, String userDailyAccessCodeRSA) async =>
       await _handleRequest(
-          ["user", userID, userDailyAccessCode, "get_tables"], null);
+          ["user", userID, userDailyAccessCodeRSA, "get_tables"], null);
 
   /// ```text
   /// Delete self
@@ -178,9 +178,9 @@ class MasasasApi {
   ///
   /// "Cannot delete the last administrator"
   static Future<MasasasResponse> deleteUserSelf(
-          String userID, String userDailyAccessCode) async =>
+          String userID, String userDailyAccessCodeRSA) async =>
       await _handleRequest(
-          ["user", userID, userDailyAccessCode, "delete_user"], null);
+          ["user", userID, userDailyAccessCodeRSA, "delete_user"], null);
 
   /// ```text
   /// Set user preferences
@@ -200,9 +200,9 @@ class MasasasApi {
   /// [EXAMPLE]
   /// """
   static Future<MasasasResponse> setPreferences(String userID,
-          String userDailyAccessCode, String preferencesJson) async =>
+          String userDailyAccessCodeRSA, String preferencesJson) async =>
       await _handleRequest(
-          ["user", userID, userDailyAccessCode, "set_preferences"],
+          ["user", userID, userDailyAccessCodeRSA, "set_preferences"],
           preferencesJson);
 
   /// ```text

@@ -13,7 +13,7 @@ class Admin extends StatefulWidget {
     required this.nfcAvailable,
     required this.showError,
     required this.adminID,
-    required this.adminDailyAccessCode,
+    required this.adminDailyAccessCodeRSA,
     required this.showConfirmation,
   });
 
@@ -23,7 +23,7 @@ class Admin extends StatefulWidget {
   final bool nfcAvailable;
 
   final String adminID;
-  final String adminDailyAccessCode;
+  final String adminDailyAccessCodeRSA;
 
   @override
   State<Admin> createState() => _AdminState();
@@ -96,7 +96,7 @@ class _AdminState extends State<Admin> {
 
     MasasasResponse createdUserJson = await MasasasApi.adminCreateUser(
         widget.adminID,
-        widget.adminDailyAccessCode,
+        widget.adminDailyAccessCodeRSA,
         _createUserID.text,
         userJson);
 
@@ -139,7 +139,7 @@ class _AdminState extends State<Admin> {
 
     MasasasResponse createdTableJson = await MasasasApi.adminCreateTable(
         widget.adminID,
-        widget.adminDailyAccessCode,
+        widget.adminDailyAccessCodeRSA,
         _createTableID.text,
         tableJson);
 
@@ -164,7 +164,7 @@ class _AdminState extends State<Admin> {
 
   void deleteUser() async {
     MasasasResponse deletedUserJson = await MasasasApi.adminDeleteUser(
-        widget.adminID, widget.adminDailyAccessCode, _deleteUserID.text);
+        widget.adminID, widget.adminDailyAccessCodeRSA, _deleteUserID.text);
 
     switch (deletedUserJson.result) {
       case MasasasResult.ok:
@@ -187,7 +187,7 @@ class _AdminState extends State<Admin> {
 
   void deleteTable() async {
     MasasasResponse deletedTableJson = await MasasasApi.adminDeleteTable(
-        widget.adminID, widget.adminDailyAccessCode, _deleteTableID.text);
+        widget.adminID, widget.adminDailyAccessCodeRSA, _deleteTableID.text);
 
     switch (deletedTableJson.result) {
       case MasasasResult.ok:
@@ -343,7 +343,7 @@ class _AdminState extends State<Admin> {
                             ],
                           ),
                         ),
-                        ElevatedButton.icon(
+                        OutlinedButton.icon(
                           onPressed: createUser,
                           icon: const Icon(Icons.person),
                           label: const Text("Create user"),
@@ -364,7 +364,7 @@ class _AdminState extends State<Admin> {
                           ),
                           controller: _deleteUserID,
                         ),
-                        ElevatedButton.icon(
+                        OutlinedButton.icon(
                           onPressed: deleteUser,
                           icon: const Icon(Icons.person),
                           label: const Text("Delete user"),
@@ -458,7 +458,7 @@ class _AdminState extends State<Admin> {
                           ),
                           controller: _createTableIcon,
                         ),
-                        ElevatedButton.icon(
+                        OutlinedButton.icon(
                           onPressed: createTable,
                           icon: const Icon(Icons.person),
                           label: const Text("Create table"),
@@ -479,7 +479,7 @@ class _AdminState extends State<Admin> {
                           ),
                           controller: _deleteTableID,
                         ),
-                        ElevatedButton.icon(
+                        OutlinedButton.icon(
                           onPressed: deleteTable,
                           icon: const Icon(Icons.person),
                           label: const Text("Delete table"),

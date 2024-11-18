@@ -56,3 +56,18 @@ class HeightValue {
         "Value": value,
       };
 }
+
+class PresetValue {
+  PresetValue(this.height, this.name);
+  HeightValue height;
+  String? name;
+
+  static PresetValue fromJson(json) =>
+      PresetValue(HeightValue(json["Unit"], json["Value"]), json["Name"]);
+
+  Map<String, dynamic> toJson() => {
+        "Unit": height.unit,
+        "Value": height.value,
+        "Name": name,
+      };
+}

@@ -7,20 +7,20 @@ import 'package:masasas_app/height.dart';
 import 'package:masasas_app/settings.dart';
 
 class SessionStats {
-  final Queue<num> _heights = Queue();
+  Queue<num> _heights = Queue();
   int _lastMinute = -1;
   int _totalMinutes = 0;
   int _minutesSitting = 0;
   int _minutesSinceLastStand = 0;
 
-  int get length => _heights.length;
-
   String _minutesToString(int m) => m >= 60
       ? "${(m ~/ 60).toString().padLeft(2, "0")} h ${(m % 60).toString().padLeft(2, "0")} m"
       : "$m m";
 
+  int get length => _heights.length;
+
   bool get sittingTooLong =>
-      _minutesSinceLastStand >= Settings.tracking.sittingTooLongMinutes;
+      _minutesSinceLastStand >= Settings.trackingSittingTooLongMinutes;
 
   int get minutes => _totalMinutes;
   String get time => _minutesToString(_totalMinutes);
@@ -30,6 +30,30 @@ class SessionStats {
 
   int get minutesStanding => _totalMinutes - _minutesSitting;
   String get timeStanding => _minutesToString(_totalMinutes - _minutesSitting);
+
+  void addDataPoint(num height, num minHeight, num maxHeight) {
+    var currentMinute = DateTime.now().minute;
+
+    // in debug mode, every data point is added, instead of the first per minute
+    if (currentMinute != _lastMinute) {
+      _heights.add(height);
+      _lastMinute = currentMinute;
+      _totalMinutes++;
+
+      if (_heights.length > Settings.trackingMaxMinutes) {
+        _heights.removeFirst();
+      }
+
+      if (height <=
+          Settings.trackingSittingHeight
+              .toAbsoluteHeight(minHeight, maxHeight)) {
+        _minutesSinceLastStand++;
+        _minutesSitting++;
+      } else {
+        _minutesSinceLastStand = 0;
+      }
+    }
+  }
 
   LineChartBarData heights(String unit) {
     double i = 1;
@@ -57,40 +81,35 @@ class SessionStats {
     );
   }
 
-  void addDataPoint(num height, num minHeight, num maxHeight) {
-    var currentMinute = DateTime.now().minute;
+  SessionStats();
 
-    // in debug mode, every data point is added, instead of the first per minute
-    if (currentMinute != _lastMinute) {
-      _heights.add(height);
-      _lastMinute = currentMinute;
-      _totalMinutes++;
-
-      if (_heights.length > Settings.tracking.maxMinutes) {
-        _heights.removeFirst();
-      }
-
-      if (height <=
-          Settings.tracking.sittingHeight
-              .toAbsoluteHeight(minHeight, maxHeight)) {
-        _minutesSinceLastStand++;
-        _minutesSitting++;
-      } else {
-        _minutesSinceLastStand = 0;
-      }
+  SessionStats.fromJson(json) {
+    _heights = Queue();
+    for (var val in json["heights"]) {
+      _heights.add(val);
     }
+    _totalMinutes = json["totalMinutes"];
+    _minutesSitting = json["minutesSitting"];
   }
+
+  Map toJson() => {
+        "heights": _heights.toList(),
+        "totalMinutes": _totalMinutes,
+        "minutesSitting": _minutesSitting,
+      };
 }
 
 class UserStats extends StatefulWidget {
   const UserStats({
     super.key,
-    required this.stats,
+    required this.sessions,
+    required this.currentSession,
     required this.min,
     required this.max,
   });
 
-  final SessionStats stats;
+  final Map<String, SessionStats> sessions;
+  final String currentSession;
   final double min;
   final double max;
 
@@ -99,7 +118,14 @@ class UserStats extends StatefulWidget {
 }
 
 class _UserStatsState extends State<UserStats> {
-  String _unit = Settings.app.defaultUnit;
+  String _unit = Settings.appDefaultUnit;
+  late String _sessionSelection;
+
+  @override
+  void initState() {
+    _sessionSelection = widget.currentSession;
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -118,7 +144,7 @@ class _UserStatsState extends State<UserStats> {
                   minY: HeightValue(_unit, widget.min).unitValue.toDouble(),
                   maxY: HeightValue(_unit, widget.max).unitValue.toDouble(),
                   lineBarsData: [
-                    widget.stats.heights(_unit),
+                    widget.sessions[_sessionSelection]!.heights(_unit),
                   ],
                   lineTouchData: const LineTouchData(enabled: false),
                   titlesData: FlTitlesData(
@@ -137,7 +163,8 @@ class _UserStatsState extends State<UserStats> {
                         showTitles: true,
                         getTitlesWidget: (value, meta) {
                           var time = (DateTime.now().subtract(Duration(
-                              minutes: widget.stats.length - value.toInt())));
+                              minutes:
+                                  widget.sessions.length - value.toInt())));
                           return Transform.rotate(
                             angle: pi / 6,
                             child: Text(
@@ -170,9 +197,11 @@ class _UserStatsState extends State<UserStats> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  Text("Time sitting:\n${widget.stats.timeSitting}",
+                  Text(
+                      "Time sitting:\n${widget.sessions[_sessionSelection]!.timeSitting}",
                       textAlign: TextAlign.center),
-                  Text("Time standing:\n${widget.stats.timeStanding}",
+                  Text(
+                      "Time standing:\n${widget.sessions[_sessionSelection]!.timeStanding}",
                       textAlign: TextAlign.center),
                   Row(
                     mainAxisSize: MainAxisSize.min,
@@ -189,12 +218,39 @@ class _UserStatsState extends State<UserStats> {
                                 value: "burgers", child: Text("inch"))
                           ],
                           onChanged: (String? val) {
-                            _unit = val ?? Settings.app.defaultUnit;
+                            _unit = val ?? Settings.appDefaultUnit;
                             setState(() {});
                           },
                         ),
                       ),
                     ],
+                  ),
+                  Visibility(
+                    visible: widget.sessions.length > 1,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text("Session:"),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 16.0),
+                          child: DropdownButton(
+                            value: _sessionSelection,
+                            items: widget.sessions.keys
+                                .map(
+                                  (val) => DropdownMenuItem(
+                                    value: val,
+                                    child: Text(val),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (String? val) {
+                              _sessionSelection = val ?? widget.currentSession;
+                              setState(() {});
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
