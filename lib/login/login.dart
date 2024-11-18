@@ -178,9 +178,14 @@ class _LoginState extends State<Login> {
               setUserCredentials: setUserCredentials,
             ),
         },
-        IconButton(
-          onPressed: () => setState(() => _settingsOpen = true),
-          icon: const Icon(Icons.settings),
+        Positioned(
+          top: 0,
+          right: 0,
+          child: OutlinedButton.icon(
+            label: const Text("Settings"),
+            onPressed: () => setState(() => _settingsOpen = true),
+            icon: const Icon(Icons.settings),
+          ),
         ),
         Positioned(
           bottom: 0,

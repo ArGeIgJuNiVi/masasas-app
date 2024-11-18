@@ -199,6 +199,7 @@ class _HomepageState extends State<Homepage> {
 
     if (_selectedTableID != null && _selectedTableDailyAccessCodeRSA != null) {
       return TableManager(
+        showError: widget.showError,
         invalidateUserCredentials: widget.invalidateUserCredentials,
         deselectTable: deselectTable,
         selectedTableID: _selectedTableID!,
@@ -276,10 +277,12 @@ class _HomepageState extends State<Homepage> {
             right: 0,
             child: Visibility(
               visible: _admin,
-              child: IconButton(
-                  tooltip: "Admin",
-                  icon: const Icon(Icons.admin_panel_settings),
-                  color: _adminMenuOpen ? Colors.red : null,
+              child: OutlinedButton.icon(
+                  label: const Text("Admin"),
+                  icon: Icon(
+                    Icons.admin_panel_settings,
+                    color: _adminMenuOpen ? Colors.red : null,
+                  ),
                   onPressed: () =>
                       setState(() => _adminMenuOpen = !_adminMenuOpen)),
             ),
@@ -289,10 +292,12 @@ class _HomepageState extends State<Homepage> {
             right: 0,
             child: Visibility(
               visible: _selfDelete,
-              child: IconButton(
-                tooltip: "Delete account",
-                icon: const Icon(Icons.delete),
-                color: Colors.red,
+              child: OutlinedButton.icon(
+                label: const Text("Delete account"),
+                icon: const Icon(
+                  Icons.delete,
+                  color: Colors.red,
+                ),
                 onPressed: () => showDialog<String>(
                   context: context,
                   builder: (BuildContext context) => Dialog(

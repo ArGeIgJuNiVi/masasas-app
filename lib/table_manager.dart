@@ -12,14 +12,16 @@ import 'package:masasas_app/user_stats.dart';
 class TableManager extends StatefulWidget {
   const TableManager({
     super.key,
+    required this.showError,
     required this.deselectTable,
+    required this.invalidateUserCredentials,
     required this.selectedTableID,
     required this.selectedTableDailyAccessCodeRSA,
     required this.userID,
     required this.userDailyAccessCodeRSA,
-    required this.invalidateUserCredentials,
   });
 
+  final Function(String, double) showError;
   final Function([String]) deselectTable;
   final Function([String]) invalidateUserCredentials;
   final String selectedTableID;
@@ -33,13 +35,14 @@ class TableManager extends StatefulWidget {
 
 class _TableManagerState extends State<TableManager> {
   bool _personalizationEnabled = false;
+  bool _personalizationActivated = false;
   Timer? _updateData;
   Map? _selectedTableData;
   Map? _userPreferences;
   int _retryCounter = 0;
   String _tableUnit = Settings.appDefaultUnit;
   Map<String, SessionStats> _sessions = {};
-  final String _currentSession = DateTime.now().toString();
+  late String _currentSession;
   bool _statsOpen = false;
 
   double percentHeight() =>
@@ -114,6 +117,10 @@ class _TableManagerState extends State<TableManager> {
 
   @override
   void initState() {
+    var t = DateTime.now();
+    _currentSession =
+        "${t.year}-${t.month}-${t.day} ${t.hour.toString().padLeft(2, "0")}:${t.minute.toString().padLeft(2, "0")}";
+
     _sessions = (jsonDecode(Settings.sharedPreferences
                 .getString("${widget.userID}-PastSessions") ??
             "{}") as Map)
@@ -314,111 +321,144 @@ class _TableManagerState extends State<TableManager> {
                     DropdownMenuItem(value: "burgers", child: Text("inch"))
                   ],
                   onChanged: (String? val) {
-                    setState(() => _tableUnit = val ?? "m");
+                    setState(() => _tableUnit = val ?? Settings.appDefaultUnit);
                   },
                 ),
               ],
             ),
             Expanded(
-              child: Card(
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(
-                              top: 12.0,
-                              left: 16.0,
-                              right: 16.0,
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  "Presets:",
-                                  style: TextStyle(fontSize: 32),
-                                ),
-                                Visibility(
-                                  visible: _personalizationEnabled,
-                                  child: OutlinedButton.icon(
-                                    icon: const Icon(Icons.add),
-                                    label: const Text("Add preset"),
-                                    onPressed: () => showDialog<String>(
-                                      context: context,
-                                      builder: (BuildContext context) =>
-                                          DialogInput(addPreset: addPreset),
+              child: Padding(
+                padding: const EdgeInsets.only(top: 40.0),
+                child: Card(
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                top: 12.0,
+                                left: 16.0,
+                                right: 16.0,
+                              ),
+                              child: Row(
+                                children: [
+                                  const Text(
+                                    "Presets",
+                                    style: TextStyle(fontSize: 32),
+                                  ),
+                                  const SizedBox(
+                                    width: 16,
+                                  ),
+                                  Visibility(
+                                    visible: _personalizationEnabled &&
+                                        _personalizationActivated,
+                                    child: IconButton(
+                                      icon: const Icon(Icons.add),
+                                      tooltip: "Add preset",
+                                      onPressed: () => showDialog<String>(
+                                        context: context,
+                                        builder: (BuildContext context) =>
+                                            DialogInput(
+                                          addPreset: addPreset,
+                                          showError: widget.showError,
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ],
+                                  const Spacer(),
+                                  Visibility(
+                                    visible: _personalizationEnabled,
+                                    child: OutlinedButton.icon(
+                                      icon: Icon(
+                                        Icons.brush,
+                                        color: _personalizationActivated
+                                            ? Colors.red
+                                            : null,
+                                      ),
+                                      label: const Text("Personalize"),
+                                      onPressed: () => setState(
+                                        () => _personalizationActivated =
+                                            !_personalizationActivated,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          Expanded(
-                            child: ReorderableListView.builder(
-                              buildDefaultDragHandles: false,
-                              onReorder: (oldIndex, newIndex) {
-                                if (newIndex > oldIndex) newIndex--;
-                                var tmp = _userPreferences!["HeightPresets"]
-                                    [oldIndex];
-                                _userPreferences!["HeightPresets"]
-                                    .removeAt(oldIndex);
-                                _userPreferences!["HeightPresets"]
-                                    .insert(newIndex, tmp);
-                                savePresets(_userPreferences!["HeightPresets"]);
-                              },
-                              itemCount:
-                                  _userPreferences!["HeightPresets"].length,
-                              itemBuilder: (context, index) {
-                                PresetValue preset = PresetValue.fromJson(
-                                    _userPreferences!["HeightPresets"][index]);
-                                return ListTile(
-                                  key: Key(index.toString()),
-                                  leading: _personalizationEnabled
-                                      ? ReorderableDragStartListener(
-                                          enabled: _personalizationEnabled,
-                                          key: Key(index.toString()),
-                                          index: index,
-                                          child: const Icon(Icons.drag_handle),
-                                        )
-                                      : null,
-                                  title: Text(
-                                      preset.name ?? preset.height.toString()),
-                                  trailing: _personalizationEnabled
-                                      ? IconButton(
-                                          onPressed: () {
-                                            List presets = _userPreferences![
-                                                    "HeightPresets"]
-                                                .toList();
-                                            presets.removeAt(index);
-                                            savePresets(presets);
-                                          },
-                                          icon: const Icon(
-                                            Icons.delete,
-                                            color: Colors.red,
-                                          ))
-                                      : null,
-                                  onTap: () {
-                                    setTableHeight(
-                                      PresetValue.fromJson(
-                                        _userPreferences!["HeightPresets"]
-                                            [index],
-                                      ).height.toAbsoluteHeight(
-                                            _selectedTableData!["Data"]
-                                                ["MinHeight"],
-                                            _selectedTableData!["Data"]
-                                                ["MaxHeight"],
-                                          ),
-                                    );
-                                  },
-                                );
-                              },
+                            Expanded(
+                              child: ReorderableListView.builder(
+                                buildDefaultDragHandles: false,
+                                onReorder: (oldIndex, newIndex) {
+                                  if (newIndex > oldIndex) newIndex--;
+                                  var tmp = _userPreferences!["HeightPresets"]
+                                      [oldIndex];
+                                  _userPreferences!["HeightPresets"]
+                                      .removeAt(oldIndex);
+                                  _userPreferences!["HeightPresets"]
+                                      .insert(newIndex, tmp);
+                                  savePresets(
+                                      _userPreferences!["HeightPresets"]);
+                                },
+                                itemCount:
+                                    _userPreferences!["HeightPresets"].length,
+                                itemBuilder: (context, index) {
+                                  PresetValue preset = PresetValue.fromJson(
+                                      _userPreferences!["HeightPresets"]
+                                          [index]);
+                                  return ListTile(
+                                    key: Key(index.toString()),
+                                    leading: _personalizationEnabled &&
+                                            _personalizationActivated
+                                        ? ReorderableDragStartListener(
+                                            enabled: _personalizationEnabled &&
+                                                _personalizationActivated,
+                                            key: Key(index.toString()),
+                                            index: index,
+                                            child:
+                                                const Icon(Icons.drag_handle),
+                                          )
+                                        : null,
+                                    title: Text(preset.name ??
+                                        preset.height.toString()),
+                                    trailing: _personalizationEnabled &&
+                                            _personalizationActivated
+                                        ? IconButton(
+                                            tooltip: "Delete this preset",
+                                            onPressed: () {
+                                              List presets = _userPreferences![
+                                                      "HeightPresets"]
+                                                  .toList();
+                                              presets.removeAt(index);
+                                              savePresets(presets);
+                                            },
+                                            icon: const Icon(
+                                              Icons.delete,
+                                              color: Colors.red,
+                                            ))
+                                        : null,
+                                    onTap: () {
+                                      setTableHeight(
+                                        PresetValue.fromJson(
+                                          _userPreferences!["HeightPresets"]
+                                              [index],
+                                        ).height.toAbsoluteHeight(
+                                              _selectedTableData!["Data"]
+                                                  ["MinHeight"],
+                                              _selectedTableData!["Data"]
+                                                  ["MaxHeight"],
+                                            ),
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -447,8 +487,8 @@ class _TableManagerState extends State<TableManager> {
           right: 0,
           child: Visibility(
             visible: Settings.trackingEnabled,
-            child: IconButton(
-              tooltip: "Stats",
+            child: OutlinedButton.icon(
+              label: const Text("Stats"),
               onPressed: () => setState(() => _statsOpen = !_statsOpen),
               icon: Icon(
                 Icons.line_axis,
@@ -484,8 +524,10 @@ class _TableManagerState extends State<TableManager> {
 }
 
 class DialogInput extends StatefulWidget {
-  const DialogInput({super.key, required this.addPreset});
+  const DialogInput(
+      {super.key, required this.addPreset, required this.showError});
   final Function(PresetValue) addPreset;
+  final Function(String, double) showError;
   @override
   State<DialogInput> createState() => _DialogState();
 }
@@ -495,6 +537,25 @@ class _DialogState extends State<DialogInput> {
       text: HeightValue(Settings.appDefaultUnit, 1.0).toStringWithoutUnit());
   final TextEditingController _presetNameController = TextEditingController();
   String _presetUnit = Settings.appDefaultUnit;
+
+  void addPreset() {
+    if (_presetValueController.text.isNotEmpty) {
+      widget.addPreset(
+        PresetValue(
+          HeightValue.adjusted(
+            _presetUnit,
+            double.parse(_presetValueController.text),
+          ),
+          _presetNameController.text.isNotEmpty
+              ? _presetNameController.text
+              : null,
+        ),
+      );
+      Navigator.pop(context);
+    } else {
+      widget.showError("Please input a value", 16);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -538,7 +599,8 @@ class _DialogState extends State<DialogInput> {
                               value: "burgers", child: Text("inch"))
                         ],
                         onChanged: (String? val) {
-                          setState(() => _presetUnit = val ?? "m");
+                          setState(() =>
+                              _presetUnit = val ?? Settings.appDefaultUnit);
                         }),
                   )
                 ],
@@ -552,6 +614,7 @@ class _DialogState extends State<DialogInput> {
                   labelText: "Preset Name",
                   border: OutlineInputBorder(),
                 ),
+                onSubmitted: (_) => addPreset(),
               ),
             ),
             const SizedBox(height: 15),
@@ -559,20 +622,7 @@ class _DialogState extends State<DialogInput> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 OutlinedButton(
-                  onPressed: () {
-                    widget.addPreset(
-                      PresetValue(
-                        HeightValue.adjusted(
-                          _presetUnit,
-                          double.parse(_presetValueController.text),
-                        ),
-                        _presetNameController.text.isNotEmpty
-                            ? _presetNameController.text
-                            : null,
-                      ),
-                    );
-                    Navigator.pop(context);
-                  },
+                  onPressed: addPreset,
                   child: const Text('Ok'),
                 ),
                 const SizedBox(width: 48),

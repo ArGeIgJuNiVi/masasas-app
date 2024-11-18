@@ -34,9 +34,12 @@ class _LoginPasswordState extends State<LoginPassword> {
                   MediaQuery.of(context).size.width / 2),
             ),
           ),
-          const Text(
-            "Masasas",
-            style: TextStyle(fontSize: 32),
+          Visibility(
+            visible: MediaQuery.of(context).size.height > 440,
+            child: const Text(
+              "Masasas",
+              style: TextStyle(fontSize: 32),
+            ),
           ),
           const SizedBox(height: 32),
           TextField(
@@ -50,6 +53,10 @@ class _LoginPasswordState extends State<LoginPassword> {
           TextField(
             controller: _passwordController,
             obscureText: _obscurePassword,
+            onSubmitted: (_) {
+              widget.setUserCredentials(
+                  _usernameController.text, _passwordController.text);
+            },
             decoration: InputDecoration(
               labelText: 'Password',
               border: const OutlineInputBorder(),

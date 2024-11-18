@@ -565,7 +565,8 @@ class _SettingsWidgetState extends State<SettingsWidget> {
                                         Settings.trackingSittingHeight.value =
                                             0;
                                       }
-                                      _trackingSittingHeightUnit = val ?? "m";
+                                      _trackingSittingHeightUnit =
+                                          val ?? Settings.appDefaultUnit;
                                       _trackingSittingHeightValue.text =
                                           HeightValue(
                                         _trackingSittingHeightUnit,
@@ -601,8 +602,17 @@ class _SettingsWidgetState extends State<SettingsWidget> {
             ],
           ),
         ),
-        BackButton(
-          onPressed: widget.closeSettings,
+        Positioned(
+          top: 0,
+          right: 0,
+          child: OutlinedButton.icon(
+            label: const Text("Settings"),
+            onPressed: widget.closeSettings,
+            icon: const Icon(
+              Icons.settings,
+              color: Colors.red,
+            ),
+          ),
         ),
       ],
     );
