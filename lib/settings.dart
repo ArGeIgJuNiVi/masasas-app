@@ -10,7 +10,7 @@ abstract class Settings {
   static bool _initialized = false;
   static bool _waiting = false;
 
-  static var apiScheme = "http";
+  static var apiScheme = "https";
   static var apiHost = "localhost";
   static var apiPort = 5088;
 
@@ -26,7 +26,7 @@ abstract class Settings {
   static var trackingEnabled = true;
   static var trackingGuest = false;
   static var trackingMaxMinutes = 480;
-  static var trackingMaxSessions = 480;
+  static var trackingMaxSessions = 5;
   static var trackingSittingReminder = true;
   static var trackingSittingTooLongMinutes = 120;
   static var trackingSittingHeight = HeightValue("m", 1.0);
@@ -266,340 +266,357 @@ class _SettingsWidgetState extends State<SettingsWidget> {
 
     return Stack(
       children: [
-        SingleChildScrollView(
-          child: Wrap(
-            runSpacing: 32,
-            alignment: WrapAlignment.spaceAround,
-            children: [
-              const Center(
-                child: Text(
-                  "Settings",
-                  style: TextStyle(
-                    fontSize: 32,
+        Positioned(
+          top: MediaQuery.of(context).size.width > 500 ? 0 : 48,
+          left: 0,
+          right: 0,
+          child: const Center(
+            child: Text(
+              "Settings",
+              style: TextStyle(
+                fontSize: 32,
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          top: MediaQuery.of(context).size.width > 500 ? 48 : 96,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: SingleChildScrollView(
+            child: Wrap(
+              runSpacing: 32,
+              alignment: WrapAlignment.spaceAround,
+              children: [
+                SizedBox(
+                  width: columnWidth,
+                  child: Column(
+                    children: [
+                      Wrap(
+                        runSpacing: 12,
+                        children: [
+                          const Text("Api"),
+                          TextField(
+                            decoration: const InputDecoration(
+                              labelText: 'Host',
+                              border: OutlineInputBorder(),
+                            ),
+                            controller: _apiHost,
+                            onChanged: updateConfig,
+                          ),
+                          TextField(
+                            decoration: const InputDecoration(
+                              labelText: 'Scheme',
+                              border: OutlineInputBorder(),
+                            ),
+                            controller: _apiScheme,
+                            onChanged: updateConfig,
+                          ),
+                          TextField(
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
+                            inputFormatters: <TextInputFormatter>[
+                              FilteringTextInputFormatter.digitsOnly
+                            ],
+                            controller: _apiPort,
+                            onChanged: updateConfig,
+                            decoration: const InputDecoration(
+                              labelText: "Port",
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 32),
+                      Wrap(
+                        runSpacing: 12,
+                        children: [
+                          const Text("App"),
+                          Row(
+                            children: [
+                              Checkbox(
+                                value: _appKeepScreenOn,
+                                onChanged: (_) {
+                                  _appKeepScreenOn = !_appKeepScreenOn;
+                                  updateConfig();
+                                },
+                              ),
+                              const Text("Keep screen on"),
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              Checkbox(
+                                value: _appPresetPersonalization,
+                                onChanged: (_) {
+                                  _appPresetPersonalization =
+                                      !_appPresetPersonalization;
+                                  updateConfig();
+                                },
+                              ),
+                              const Text("Preset personalization"),
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              const Text("Default unit:"),
+                              Padding(
+                                padding: const EdgeInsets.only(left: 16.0),
+                                child: DropdownButton(
+                                  value: _appDefaultUnit,
+                                  items: const [
+                                    DropdownMenuItem(
+                                        value: "m", child: Text("m")),
+                                    DropdownMenuItem(
+                                        value: "cm", child: Text("cm")),
+                                    DropdownMenuItem(
+                                        value: "burgers", child: Text("inch"))
+                                  ],
+                                  onChanged: (String? val) {
+                                    _appDefaultUnit =
+                                        val ?? Settings.appDefaultUnit;
+                                    updateConfig();
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                          TextField(
+                            decoration: const InputDecoration(
+                              labelText: 'Default table',
+                              border: OutlineInputBorder(),
+                            ),
+                            controller: _appDefaultTable,
+                            onChanged: updateConfig,
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              SizedBox(
-                width: columnWidth,
-                child: Column(
-                  children: [
-                    Wrap(
-                      runSpacing: 12,
-                      children: [
-                        const Text("Api"),
-                        TextField(
-                          decoration: const InputDecoration(
-                            labelText: 'Host',
-                            border: OutlineInputBorder(),
-                          ),
-                          controller: _apiHost,
-                          onChanged: updateConfig,
-                        ),
-                        TextField(
-                          decoration: const InputDecoration(
-                            labelText: 'Scheme',
-                            border: OutlineInputBorder(),
-                          ),
-                          controller: _apiScheme,
-                          onChanged: updateConfig,
-                        ),
-                        TextField(
-                          keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true),
-                          inputFormatters: <TextInputFormatter>[
-                            FilteringTextInputFormatter.digitsOnly
-                          ],
-                          controller: _apiPort,
-                          onChanged: updateConfig,
-                          decoration: const InputDecoration(
-                            labelText: "Port",
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 32),
-                    Wrap(
-                      runSpacing: 12,
-                      children: [
-                        const Text("App"),
-                        Row(
-                          children: [
-                            Checkbox(
-                              value: _appKeepScreenOn,
-                              onChanged: (_) {
-                                _appKeepScreenOn = !_appKeepScreenOn;
-                                updateConfig();
-                              },
-                            ),
-                            const Text("Keep screen on"),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            Checkbox(
-                              value: _appPresetPersonalization,
-                              onChanged: (_) {
-                                _appPresetPersonalization =
-                                    !_appPresetPersonalization;
-                                updateConfig();
-                              },
-                            ),
-                            const Text("Preset personalization"),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            const Text("Default unit:"),
-                            Padding(
-                              padding: const EdgeInsets.only(left: 16.0),
-                              child: DropdownButton(
-                                value: _appDefaultUnit,
-                                items: const [
-                                  DropdownMenuItem(
-                                      value: "m", child: Text("m")),
-                                  DropdownMenuItem(
-                                      value: "cm", child: Text("cm")),
-                                  DropdownMenuItem(
-                                      value: "burgers", child: Text("inch"))
-                                ],
-                                onChanged: (String? val) {
-                                  _appDefaultUnit =
-                                      val ?? Settings.appDefaultUnit;
-                                  updateConfig();
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                        TextField(
-                          decoration: const InputDecoration(
-                            labelText: 'Default table',
-                            border: OutlineInputBorder(),
-                          ),
-                          controller: _appDefaultTable,
-                          onChanged: updateConfig,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(
-                width: columnWidth,
-                child: Column(
-                  children: [
-                    Wrap(
-                      runSpacing: 12,
-                      children: [
-                        const Text("Guest"),
-                        Row(
-                          children: [
-                            Checkbox(
-                              value: _guestEnabled,
-                              onChanged: (_) {
-                                _guestEnabled = !_guestEnabled;
-                                updateConfig();
-                              },
-                            ),
-                            const Text("Enabled"),
-                          ],
-                        ),
-                        Visibility(
-                          visible: _guestEnabled,
-                          child: TextField(
-                            decoration: const InputDecoration(
-                              labelText: 'ID',
-                              border: OutlineInputBorder(),
-                            ),
-                            controller: _guestID,
-                            onChanged: updateConfig,
-                          ),
-                        ),
-                        Visibility(
-                          visible: _guestEnabled,
-                          child: TextField(
-                            obscureText: _obscurePassword,
-                            decoration: InputDecoration(
-                              labelText: 'Password',
-                              border: const OutlineInputBorder(),
-                              suffixIcon: IconButton(
-                                tooltip: "Toggle visibility",
-                                icon: Icon(
-                                  _obscurePassword
-                                      ? Icons.visibility
-                                      : Icons.visibility_off,
-                                ),
-                                onPressed: () {
-                                  setState(() {
-                                    _obscurePassword = !_obscurePassword;
-                                  });
-                                },
-                              ),
-                            ),
-                            controller: _guestPassword,
-                            onChanged: updateConfig,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 32),
-                    Wrap(
-                      runSpacing: 12,
-                      children: [
-                        const Text("Tracking"),
-                        Row(
-                          children: [
-                            Checkbox(
-                              value: _trackingEnabled,
-                              onChanged: (_) {
-                                _trackingEnabled = !_trackingEnabled;
-                                updateConfig();
-                              },
-                            ),
-                            const Text("Enabled"),
-                          ],
-                        ),
-                        Visibility(
-                          visible: _trackingEnabled,
-                          child: Row(
+                SizedBox(
+                  width: columnWidth,
+                  child: Column(
+                    children: [
+                      Wrap(
+                        runSpacing: 12,
+                        children: [
+                          const Text("Guest"),
+                          Row(
                             children: [
                               Checkbox(
-                                value: _trackingGuest,
+                                value: _guestEnabled,
                                 onChanged: (_) {
-                                  _trackingGuest = !_trackingGuest;
+                                  _guestEnabled = !_guestEnabled;
                                   updateConfig();
                                 },
                               ),
-                              const Text("Track guest"),
+                              const Text("Enabled"),
                             ],
                           ),
-                        ),
-                        Visibility(
-                          visible: _trackingEnabled,
-                          child: TextField(
-                            keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true),
-                            inputFormatters: <TextInputFormatter>[
-                              FilteringTextInputFormatter.digitsOnly
-                            ],
-                            controller: _trackingMaxMinutes,
-                            onChanged: updateConfig,
-                            decoration: const InputDecoration(
-                              labelText: "Max minutes",
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                        ),
-                        Visibility(
-                          visible: _trackingEnabled,
-                          child: TextField(
-                            keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true),
-                            inputFormatters: <TextInputFormatter>[
-                              FilteringTextInputFormatter.digitsOnly
-                            ],
-                            controller: _trackingMaxSessions,
-                            onChanged: updateConfig,
-                            decoration: const InputDecoration(
-                              labelText: "Max sessions count",
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                        ),
-                        Visibility(
-                          visible: _trackingEnabled,
-                          child: Row(
-                            children: [
-                              Checkbox(
-                                value: _trackingSittingReminder,
-                                onChanged: (_) {
-                                  _trackingSittingReminder =
-                                      !_trackingSittingReminder;
-                                  updateConfig();
-                                },
+                          Visibility(
+                            visible: _guestEnabled,
+                            child: TextField(
+                              decoration: const InputDecoration(
+                                labelText: 'ID',
+                                border: OutlineInputBorder(),
                               ),
-                              const Text("Sitting Reminder"),
-                            ],
+                              controller: _guestID,
+                              onChanged: updateConfig,
+                            ),
                           ),
-                        ),
-                        Visibility(
-                          visible: _trackingEnabled && _trackingSittingReminder,
-                          child: Row(
-                            children: [
-                              SizedBox(
-                                width: 200,
-                                child: TextField(
-                                  controller: _trackingSittingHeightValue,
-                                  keyboardType:
-                                      const TextInputType.numberWithOptions(
-                                          decimal: true),
-                                  inputFormatters: <TextInputFormatter>[
-                                    FilteringTextInputFormatter.allow(
-                                        RegExp(r'^\d+\.?\d{0,2}'))
-                                  ],
-                                  decoration: const InputDecoration(
-                                    labelText: "Sitting Height",
-                                    border: OutlineInputBorder(),
+                          Visibility(
+                            visible: _guestEnabled,
+                            child: TextField(
+                              obscureText: _obscurePassword,
+                              decoration: InputDecoration(
+                                labelText: 'Password',
+                                border: const OutlineInputBorder(),
+                                suffixIcon: IconButton(
+                                  tooltip: "Toggle visibility",
+                                  icon: Icon(
+                                    _obscurePassword
+                                        ? Icons.visibility
+                                        : Icons.visibility_off,
                                   ),
-                                  onChanged: updateConfig,
+                                  onPressed: () {
+                                    setState(() {
+                                      _obscurePassword = !_obscurePassword;
+                                    });
+                                  },
                                 ),
                               ),
-                              Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: DropdownButton(
-                                    value: _trackingSittingHeightUnit,
-                                    items: const [
-                                      DropdownMenuItem(
-                                          value: "m", child: Text("m")),
-                                      DropdownMenuItem(
-                                          value: "cm", child: Text("cm")),
-                                      DropdownMenuItem(
-                                          value: "%", child: Text("%")),
-                                      DropdownMenuItem(
-                                          value: "burgers", child: Text("inch"))
-                                    ],
-                                    onChanged: (String? val) {
-                                      if (_trackingSittingHeightUnit == "%" ||
-                                          val == "%") {
-                                        Settings.trackingSittingHeight.value =
-                                            0;
-                                      }
-                                      _trackingSittingHeightUnit =
-                                          val ?? Settings.appDefaultUnit;
-                                      _trackingSittingHeightValue.text =
-                                          HeightValue(
-                                        _trackingSittingHeightUnit,
-                                        Settings.trackingSittingHeight.value,
-                                      ).toStringWithoutUnit();
-                                      updateConfig();
-                                    }),
-                              )
-                            ],
-                          ),
-                        ),
-                        Visibility(
-                          visible: _trackingEnabled && _trackingSittingReminder,
-                          child: TextField(
-                            keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true),
-                            inputFormatters: <TextInputFormatter>[
-                              FilteringTextInputFormatter.digitsOnly
-                            ],
-                            controller: _trackingSittingTooLongMinutes,
-                            onChanged: updateConfig,
-                            decoration: const InputDecoration(
-                              labelText: "Sitting too long minutes",
-                              border: OutlineInputBorder(),
+                              controller: _guestPassword,
+                              onChanged: updateConfig,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                        ],
+                      ),
+                      const SizedBox(height: 32),
+                      Wrap(
+                        runSpacing: 12,
+                        children: [
+                          const Text("Tracking"),
+                          Row(
+                            children: [
+                              Checkbox(
+                                value: _trackingEnabled,
+                                onChanged: (_) {
+                                  _trackingEnabled = !_trackingEnabled;
+                                  updateConfig();
+                                },
+                              ),
+                              const Text("Enabled"),
+                            ],
+                          ),
+                          Visibility(
+                            visible: _trackingEnabled,
+                            child: Row(
+                              children: [
+                                Checkbox(
+                                  value: _trackingGuest,
+                                  onChanged: (_) {
+                                    _trackingGuest = !_trackingGuest;
+                                    updateConfig();
+                                  },
+                                ),
+                                const Text("Guest tracking history"),
+                              ],
+                            ),
+                          ),
+                          Visibility(
+                            visible: _trackingEnabled,
+                            child: TextField(
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                      decimal: true),
+                              inputFormatters: <TextInputFormatter>[
+                                FilteringTextInputFormatter.digitsOnly
+                              ],
+                              controller: _trackingMaxMinutes,
+                              onChanged: updateConfig,
+                              decoration: const InputDecoration(
+                                labelText: "Max minutes",
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                          ),
+                          Visibility(
+                            visible: _trackingEnabled,
+                            child: TextField(
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                      decimal: true),
+                              inputFormatters: <TextInputFormatter>[
+                                FilteringTextInputFormatter.digitsOnly
+                              ],
+                              controller: _trackingMaxSessions,
+                              onChanged: updateConfig,
+                              decoration: const InputDecoration(
+                                labelText: "Max sessions count",
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                          ),
+                          Visibility(
+                            visible: _trackingEnabled,
+                            child: Row(
+                              children: [
+                                Checkbox(
+                                  value: _trackingSittingReminder,
+                                  onChanged: (_) {
+                                    _trackingSittingReminder =
+                                        !_trackingSittingReminder;
+                                    updateConfig();
+                                  },
+                                ),
+                                const Text("Sitting Reminder"),
+                              ],
+                            ),
+                          ),
+                          Visibility(
+                            visible:
+                                _trackingEnabled && _trackingSittingReminder,
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                  width: 200,
+                                  child: TextField(
+                                    controller: _trackingSittingHeightValue,
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                            decimal: true),
+                                    inputFormatters: <TextInputFormatter>[
+                                      FilteringTextInputFormatter.allow(
+                                          RegExp(r'^\d+\.?\d{0,2}'))
+                                    ],
+                                    decoration: const InputDecoration(
+                                      labelText: "Sitting Height",
+                                      border: OutlineInputBorder(),
+                                    ),
+                                    onChanged: updateConfig,
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: DropdownButton(
+                                      value: _trackingSittingHeightUnit,
+                                      items: const [
+                                        DropdownMenuItem(
+                                            value: "m", child: Text("m")),
+                                        DropdownMenuItem(
+                                            value: "cm", child: Text("cm")),
+                                        DropdownMenuItem(
+                                            value: "%", child: Text("%")),
+                                        DropdownMenuItem(
+                                            value: "burgers",
+                                            child: Text("inch"))
+                                      ],
+                                      onChanged: (String? val) {
+                                        if (_trackingSittingHeightUnit == "%" ||
+                                            val == "%") {
+                                          Settings.trackingSittingHeight.value =
+                                              0;
+                                        }
+                                        _trackingSittingHeightUnit =
+                                            val ?? Settings.appDefaultUnit;
+                                        _trackingSittingHeightValue.text =
+                                            HeightValue(
+                                          _trackingSittingHeightUnit,
+                                          Settings.trackingSittingHeight.value,
+                                        ).toStringWithoutUnit();
+                                        updateConfig();
+                                      }),
+                                )
+                              ],
+                            ),
+                          ),
+                          Visibility(
+                            visible:
+                                _trackingEnabled && _trackingSittingReminder,
+                            child: TextField(
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                      decimal: true),
+                              inputFormatters: <TextInputFormatter>[
+                                FilteringTextInputFormatter.digitsOnly
+                              ],
+                              controller: _trackingSittingTooLongMinutes,
+                              onChanged: updateConfig,
+                              decoration: const InputDecoration(
+                                labelText: "Sitting too long minutes",
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
         Positioned(

@@ -1,16 +1,16 @@
 import 'dart:convert';
 
-import 'package:convert/convert.dart';
 import 'package:flutter/foundation.dart';
 import 'package:nfc_manager/nfc_manager.dart';
-import 'package:pointycastle/export.dart';
 
-({String password, String id, String? error}) getUserFromNfcCard(NfcTag tag) {
+({String id, String password, String? error}) getUserFromNfcCard(NfcTag tag) {
   try {
     return (
-      id: hex.encode(MD5Digest().process(utf8.encode(jsonEncode(tag.data)))),
-      password: hex.encode(SHA256Digest()
-          .process(utf8.encode(jsonEncode(tag.data["nfca"]["identifier"])))),
+      id: (tag.data["nfca"]["identifier"] as List<int>).join(),
+      password: base64
+          .encode(utf8
+              .encode(tag.data.toString().padLeft(50, '0').substring(0, 50)))
+          .replaceAll("=", ""),
       error: null
     );
   } catch (e) {

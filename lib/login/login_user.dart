@@ -22,26 +22,24 @@ class _LoginPasswordState extends State<LoginPassword> {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
-        mainAxisAlignment: MediaQuery.of(context).size.height > 540
-            ? MainAxisAlignment.center
-            : MainAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Visibility(
-            visible: MediaQuery.of(context).size.height > 680,
+            visible: MediaQuery.of(context).size.height > 660,
             child: Icon(
               Icons.table_restaurant,
-              size: min(MediaQuery.of(context).size.height / 6,
-                  MediaQuery.of(context).size.width / 2),
+              size: min(MediaQuery.of(context).size.height / 8,
+                  MediaQuery.of(context).size.width / 3),
             ),
           ),
           Visibility(
-            visible: MediaQuery.of(context).size.height > 440,
+            visible: MediaQuery.of(context).size.height > 480,
             child: const Text(
               "Masasas",
-              style: TextStyle(fontSize: 32),
+              style: TextStyle(fontSize: 28),
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 16),
           TextField(
             controller: _usernameController,
             decoration: const InputDecoration(

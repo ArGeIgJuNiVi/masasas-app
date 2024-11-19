@@ -1,5 +1,3 @@
-import 'package:masasas_app/masasas_api/api.dart';
-
 /// Returns the json representation of an [UnsecuredUser] (server type)
 /// used in the [MasasasAPI.adminCreateUser] method
 Future<String> newUserJson(
@@ -12,7 +10,7 @@ Future<String> newUserJson(
 ]) async =>
     """
 {
-  "PasswordRSA": "${await MasasasApi.rsaEncrypt(password)}",
+  "Password": "$password",
   "Preferences": {
     "Name": "$username",
     "HeightPresets": []

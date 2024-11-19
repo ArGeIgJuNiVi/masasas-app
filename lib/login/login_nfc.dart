@@ -72,8 +72,8 @@ class _LoginNFCState extends State<LoginNFC>
               return Transform.scale(
                 scale: _animation.value,
                 child: Container(
-                  width: 200,
-                  height: 200,
+                  width: MediaQuery.of(context).size.shortestSide / 3,
+                  height: MediaQuery.of(context).size.shortestSide / 3,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: accent,
@@ -93,7 +93,7 @@ class _LoginNFCState extends State<LoginNFC>
           const SizedBox(height: 60),
           const Text(
             "Login using your work card",
-            style: TextStyle(fontSize: 18),
+            style: TextStyle(fontSize: 16),
           ),
         ],
       ),

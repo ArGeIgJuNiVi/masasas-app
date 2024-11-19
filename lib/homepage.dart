@@ -13,13 +13,13 @@ class Homepage extends StatefulWidget {
   const Homepage(
       {super.key,
       required this.userID,
-      required this.userDailyAccessCodeRSA,
+      required this.userDailyAccessCode,
       required this.invalidateUserCredentials,
       required this.showError,
       required this.nfcAvailable,
       required this.showConfirmation});
   final String userID;
-  final String userDailyAccessCodeRSA;
+  final String userDailyAccessCode;
   final Function([String]) invalidateUserCredentials;
   final Function(String, double) showError;
   final Function(String, double) showConfirmation;
@@ -35,7 +35,7 @@ class _HomepageState extends State<Homepage> {
   Timer? _updateData;
   List? _tables;
   String? _selectedTableID;
-  String? _selectedTableDailyAccessCodeRSA;
+  String? _selectedTableDailyAccessCode;
   Map? _userPreferences;
   bool _admin = false;
   bool _selfDelete = false;
@@ -43,14 +43,14 @@ class _HomepageState extends State<Homepage> {
   bool _loadedTableOnce = false;
 
   void updateData([Timer? state]) async {
-    MasasasResponse tablesJson = await MasasasApi.getTables(
-        widget.userID, widget.userDailyAccessCodeRSA);
+    MasasasResponse tablesJson =
+        await MasasasApi.getTables(widget.userID, widget.userDailyAccessCode);
     MasasasResponse userPreferencesJson = await MasasasApi.getUserPreferences(
-        widget.userID, widget.userDailyAccessCodeRSA);
+        widget.userID, widget.userDailyAccessCode);
     MasasasResponse adminString =
-        await MasasasApi.adminGet(widget.userID, widget.userDailyAccessCodeRSA);
+        await MasasasApi.adminGet(widget.userID, widget.userDailyAccessCode);
     MasasasResponse deleteString = await MasasasApi.getUserSelfDeletionState(
-        widget.userID, widget.userDailyAccessCodeRSA);
+        widget.userID, widget.userDailyAccessCode);
 
     switch ((
       tablesJson.result,
@@ -126,18 +126,7 @@ class _HomepageState extends State<Homepage> {
   }
 
   Future selectTable(String id, String dailyAccessCode) async {
-    MasasasResponse encryptedDailyAccessCode = await MasasasApi.rsaEncrypt(
-      dailyAccessCode,
-    );
-
-    switch (encryptedDailyAccessCode.result) {
-      case MasasasResult.ok:
-        _selectedTableDailyAccessCodeRSA = encryptedDailyAccessCode.body;
-        break;
-      default:
-        widget.invalidateUserCredentials(encryptedDailyAccessCode.body);
-        return;
-    }
+    _selectedTableDailyAccessCode = dailyAccessCode;
 
     setState(
       () {
@@ -149,7 +138,7 @@ class _HomepageState extends State<Homepage> {
 
   void deselectTable([String? error]) {
     _selectedTableID = null;
-    _selectedTableDailyAccessCodeRSA = null;
+    _selectedTableDailyAccessCode = null;
 
     updateData();
     _updateData = Timer.periodic(const Duration(seconds: 5), updateData);
@@ -163,7 +152,7 @@ class _HomepageState extends State<Homepage> {
 
   void deleteUser() async {
     MasasasResponse deletionString = await MasasasApi.deleteUserSelf(
-        widget.userID, widget.userDailyAccessCodeRSA);
+        widget.userID, widget.userDailyAccessCode);
 
     switch (deletionString.result) {
       case MasasasResult.ok:
@@ -197,21 +186,27 @@ class _HomepageState extends State<Homepage> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (_selectedTableID != null && _selectedTableDailyAccessCodeRSA != null) {
+    if (_selectedTableID != null && _selectedTableDailyAccessCode != null) {
       return TableManager(
         showError: widget.showError,
         invalidateUserCredentials: widget.invalidateUserCredentials,
         deselectTable: deselectTable,
         selectedTableID: _selectedTableID!,
-        selectedTableDailyAccessCodeRSA: _selectedTableDailyAccessCodeRSA!,
+        selectedTableDailyAccessCode: _selectedTableDailyAccessCode!,
         userID: widget.userID,
-        userDailyAccessCodeRSA: widget.userDailyAccessCodeRSA,
+        userDailyAccessCode: widget.userDailyAccessCode,
       );
     } else {
       return Stack(
         children: [
           Column(
             children: [
+              Visibility(
+                visible: MediaQuery.of(context).size.width <= 500,
+                child: const SizedBox(
+                  height: 48,
+                ),
+              ),
               Column(
                 children: [
                   Row(
@@ -268,7 +263,7 @@ class _HomepageState extends State<Homepage> {
                 showConfirmation: widget.showConfirmation,
                 nfcAvailable: widget.nfcAvailable,
                 adminID: widget.userID,
-                adminDailyAccessCodeRSA: widget.userDailyAccessCodeRSA,
+                adminDailyAccessCode: widget.userDailyAccessCode,
               ),
             ),
           ),

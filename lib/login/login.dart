@@ -29,7 +29,9 @@ Widget loginPageIcon(LoginPageMethod method) => switch (method) {
     };
 
 class Login extends StatefulWidget {
-  const Login({super.key});
+  const Login({
+    super.key,
+  });
 
   @override
   State<Login> createState() => _LoginState();
@@ -38,7 +40,7 @@ class Login extends StatefulWidget {
 class _LoginState extends State<Login> {
   bool _settingsOpen = false;
   String? _userID;
-  String? _userDailyAccessCodeRSA;
+  String? _userDailyAccessCode;
   LoginPageMethod _loginMethod = LoginPageMethod.NFC;
   bool _nfcAvailable = false;
 
@@ -87,22 +89,17 @@ class _LoginState extends State<Login> {
       case MasasasResult.ok:
         try {
           var json = jsonDecode(userCredentials.body);
-          _userID = json["UserID"];
-          MasasasResponse encryptedDailyAccessCode =
-              await MasasasApi.rsaEncrypt(json["DailyAccessCode"]);
-          switch (encryptedDailyAccessCode.result) {
-            case MasasasResult.ok:
-              _userDailyAccessCodeRSA = encryptedDailyAccessCode.body;
-              break;
-            default:
-              showError(encryptedDailyAccessCode.body, 88);
-              return;
-          }
+          setState(() {
+            _userID = json["UserID"];
+            _userDailyAccessCode = json["DailyAccessCode"];
+          });
+          break;
         } catch (e) {
           if (kDebugMode) print(e);
           showError("Received invalid user data", 88);
         }
-        return setState(() {});
+
+        return;
 
       default:
         showError(userCredentials.body, 88);
@@ -132,7 +129,7 @@ class _LoginState extends State<Login> {
       await NfcManager.instance.stopSession();
     }
     _userID = null;
-    _userDailyAccessCodeRSA = null;
+    _userDailyAccessCode = null;
 
     if (error != null) {
       showError(error, 88);
@@ -145,12 +142,12 @@ class _LoginState extends State<Login> {
   Widget build(BuildContext context) {
     if (_settingsOpen) return SettingsWidget(closeSettings: closeSettings);
 
-    if (_userID != null && _userDailyAccessCodeRSA != null) {
+    if (_userID != null && _userDailyAccessCode != null) {
       return Homepage(
         showError: showError,
         showConfirmation: showConfirmation,
         userID: _userID!,
-        userDailyAccessCodeRSA: _userDailyAccessCodeRSA!,
+        userDailyAccessCode: _userDailyAccessCode!,
         invalidateUserCredentials: invalidateUserCredentials,
         nfcAvailable: _nfcAvailable,
       );

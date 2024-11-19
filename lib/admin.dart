@@ -13,7 +13,7 @@ class Admin extends StatefulWidget {
     required this.nfcAvailable,
     required this.showError,
     required this.adminID,
-    required this.adminDailyAccessCodeRSA,
+    required this.adminDailyAccessCode,
     required this.showConfirmation,
   });
 
@@ -23,7 +23,7 @@ class Admin extends StatefulWidget {
   final bool nfcAvailable;
 
   final String adminID;
-  final String adminDailyAccessCodeRSA;
+  final String adminDailyAccessCode;
 
   @override
   State<Admin> createState() => _AdminState();
@@ -96,7 +96,7 @@ class _AdminState extends State<Admin> {
 
     MasasasResponse createdUserJson = await MasasasApi.adminCreateUser(
         widget.adminID,
-        widget.adminDailyAccessCodeRSA,
+        widget.adminDailyAccessCode,
         _createUserID.text,
         userJson);
 
@@ -139,7 +139,7 @@ class _AdminState extends State<Admin> {
 
     MasasasResponse createdTableJson = await MasasasApi.adminCreateTable(
         widget.adminID,
-        widget.adminDailyAccessCodeRSA,
+        widget.adminDailyAccessCode,
         _createTableID.text,
         tableJson);
 
@@ -164,7 +164,7 @@ class _AdminState extends State<Admin> {
 
   void deleteUser() async {
     MasasasResponse deletedUserJson = await MasasasApi.adminDeleteUser(
-        widget.adminID, widget.adminDailyAccessCodeRSA, _deleteUserID.text);
+        widget.adminID, widget.adminDailyAccessCode, _deleteUserID.text);
 
     switch (deletedUserJson.result) {
       case MasasasResult.ok:
@@ -187,7 +187,7 @@ class _AdminState extends State<Admin> {
 
   void deleteTable() async {
     MasasasResponse deletedTableJson = await MasasasApi.adminDeleteTable(
-        widget.adminID, widget.adminDailyAccessCodeRSA, _deleteTableID.text);
+        widget.adminID, widget.adminDailyAccessCode, _deleteTableID.text);
 
     switch (deletedTableJson.result) {
       case MasasasResult.ok:

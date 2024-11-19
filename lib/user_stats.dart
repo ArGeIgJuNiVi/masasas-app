@@ -132,128 +132,122 @@ class _UserStatsState extends State<UserStats> {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(32.0),
-        child: Stack(
+        child: Column(
           children: [
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 100,
-              child: LineChart(
-                LineChartData(
-                  minY: HeightValue(_unit, widget.min).unitValue.toDouble(),
-                  maxY: HeightValue(_unit, widget.max).unitValue.toDouble(),
-                  lineBarsData: [
-                    widget.sessions[_sessionSelection]!.heights(_unit),
-                  ],
-                  lineTouchData: const LineTouchData(enabled: false),
-                  titlesData: FlTitlesData(
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) =>
-                            Text(HeightValue.adjusted(_unit, value).toString()),
-                        reservedSize: 50,
-                        minIncluded: false,
-                        maxIncluded: false,
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: LineChart(
+                  LineChartData(
+                    minY: HeightValue(_unit, widget.min).unitValue.toDouble(),
+                    maxY: HeightValue(_unit, widget.max).unitValue.toDouble(),
+                    lineBarsData: [
+                      widget.sessions[_sessionSelection]!.heights(_unit),
+                    ],
+                    lineTouchData: const LineTouchData(enabled: false),
+                    titlesData: FlTitlesData(
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          getTitlesWidget: (value, meta) => Text(
+                              HeightValue.adjusted(_unit, value).toString()),
+                          reservedSize: 50,
+                          minIncluded: false,
+                          maxIncluded: false,
+                        ),
                       ),
-                    ),
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) {
-                          var time = (DateTime.now().subtract(Duration(
-                              minutes:
-                                  widget.sessions.length - value.toInt())));
-                          return Transform.rotate(
-                            angle: pi / 6,
-                            child: Text(
-                                ("   ${time.hour.toString().padLeft(2, "0")}:${time.minute.toString().padLeft(2, "0")}")),
-                          );
-                        },
-                        reservedSize: 50,
-                        minIncluded: false,
-                        maxIncluded: false,
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: false,
+                          getTitlesWidget: (value, meta) {
+                            var time = (DateTime.now().subtract(Duration(
+                                minutes:
+                                    widget.sessions.length - value.toInt())));
+                            return Transform.rotate(
+                              angle: pi / 6,
+                              child: Text(
+                                  ("   ${time.hour.toString().padLeft(2, "0")}:${time.minute.toString().padLeft(2, "0")}")),
+                            );
+                          },
+                          reservedSize: 50,
+                          minIncluded: false,
+                          maxIncluded: false,
+                        ),
                       ),
-                    ),
-                    topTitles: const AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: false,
+                      topTitles: const AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: false,
+                        ),
                       ),
-                    ),
-                    rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: false,
+                      rightTitles: const AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: false,
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
             ),
-            Positioned(
-              bottom: 20,
-              left: 0,
-              right: 0,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  Text(
-                      "Time sitting:\n${widget.sessions[_sessionSelection]!.timeSitting}",
-                      textAlign: TextAlign.center),
-                  Text(
-                      "Time standing:\n${widget.sessions[_sessionSelection]!.timeStanding}",
-                      textAlign: TextAlign.center),
-                  Row(
+            Wrap(
+              alignment: WrapAlignment.spaceAround,
+              children: [
+                Text(
+                    "Time sitting:\n${widget.sessions[_sessionSelection]!.timeSitting}",
+                    textAlign: TextAlign.center),
+                Text(
+                    "Time standing:\n${widget.sessions[_sessionSelection]!.timeStanding}",
+                    textAlign: TextAlign.center),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text("Unit:"),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 16.0),
+                      child: DropdownButton(
+                        value: _unit,
+                        items: const [
+                          DropdownMenuItem(value: "m", child: Text("m")),
+                          DropdownMenuItem(value: "cm", child: Text("cm")),
+                          DropdownMenuItem(
+                              value: "burgers", child: Text("inch"))
+                        ],
+                        onChanged: (String? val) {
+                          _unit = val ?? Settings.appDefaultUnit;
+                          setState(() {});
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                Visibility(
+                  visible: widget.sessions.length > 1,
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text("Unit:"),
+                      const Text("Session:"),
                       Padding(
                         padding: const EdgeInsets.only(left: 16.0),
                         child: DropdownButton(
-                          value: _unit,
-                          items: const [
-                            DropdownMenuItem(value: "m", child: Text("m")),
-                            DropdownMenuItem(value: "cm", child: Text("cm")),
-                            DropdownMenuItem(
-                                value: "burgers", child: Text("inch"))
-                          ],
+                          value: _sessionSelection,
+                          items: widget.sessions.keys
+                              .map(
+                                (val) => DropdownMenuItem(
+                                  value: val,
+                                  child: Text(val),
+                                ),
+                              )
+                              .toList(),
                           onChanged: (String? val) {
-                            _unit = val ?? Settings.appDefaultUnit;
+                            _sessionSelection = val ?? widget.currentSession;
                             setState(() {});
                           },
                         ),
                       ),
                     ],
                   ),
-                  Visibility(
-                    visible: widget.sessions.length > 1,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text("Session:"),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 16.0),
-                          child: DropdownButton(
-                            value: _sessionSelection,
-                            items: widget.sessions.keys
-                                .map(
-                                  (val) => DropdownMenuItem(
-                                    value: val,
-                                    child: Text(val),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: (String? val) {
-                              _sessionSelection = val ?? widget.currentSession;
-                              setState(() {});
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ],
         ),
