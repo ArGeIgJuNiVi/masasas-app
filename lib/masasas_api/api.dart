@@ -234,6 +234,24 @@ class MasasasApi {
   /// Get the list of all users
   ///
   /// - OK Request value -
+  /// The [String] "Imported tables successfully"
+  ///
+  /// - Bad Request errors -
+  /// "Invalid admin id or daily access code"
+  ///
+  /// "Unauthorized user"
+  ///
+  /// "Could not import external api tables"
+  static Future<MasasasResponse> adminImportExternalApiTables(
+          String adminID, String adminDailyAccessCode) async =>
+      await _handleRequest(
+          "/admin/$adminID/$adminDailyAccessCode/import_external_api_tables",
+          null);
+
+  /// ```text
+  /// Import the tables from the defined external api
+  ///
+  /// - OK Request value -
   /// Returns the users list as [Json]
   ///
   /// - Bad Request errors -
@@ -408,10 +426,80 @@ class MasasasApi {
   /// "Unauthorized user"
   ///
   /// "Invalid config reload time, should be a double in seconds, or null to disable reloading"
-  static Future<MasasasResponse> adminSetConfigReloadTimeSeconds(
+  static Future<MasasasResponse> adminSetConfigReloadSeconds(
           String adminID, String adminDailyAccessCode, num time) async =>
       await _handleRequest(
           "/admin/$adminID/$adminDailyAccessCode/set_config_reload_seconds",
+          time.toString());
+
+  /// ```text
+  /// Set the external api key (String)
+  ///
+  /// - OK Request value -
+  /// Returns the key [String]
+  ///
+  /// - Bad Request errors -
+  /// "Invalid admin id or daily access code"
+  ///
+  /// "Unauthorized user"
+  ///
+  /// "Invalid api key"
+  static Future<MasasasResponse> adminSetExternalApiKey(
+          String adminID, String adminDailyAccessCode, String key) async =>
+      await _handleRequest(
+          "/admin/$adminID/$adminDailyAccessCode/set_external_api_key", key);
+
+  /// ```text
+  /// Set the external api url (String, parsed to Uri)
+  ///
+  /// - OK Request value -
+  /// Returns the url [String]
+  ///
+  /// - Bad Request errors -
+  /// "Invalid admin id or daily access code"
+  ///
+  /// "Unauthorized user"
+  ///
+  /// "Invalid api url"
+  static Future<MasasasResponse> adminSetExternalApiUrl(
+          String adminID, String adminDailyAccessCode, Uri url) async =>
+      await _handleRequest(
+          "/admin/$adminID/$adminDailyAccessCode/set_external_api_url",
+          url.toString());
+
+  /// ```text
+  /// Set the used external api implementation (Options: "dummy", "kr64", invalid values are equivalent to dummy)
+  ///
+  /// - OK Request value -
+  /// Returns the set reload time in seconds as a [String] representing a [num]
+  ///
+  /// - Bad Request errors -
+  /// "Invalid admin id or daily access code"
+  ///
+  /// "Unauthorized user"
+  ///
+  /// "Invalid api type"
+  static Future<MasasasResponse> adminSetExternalApiType(
+          String adminID, String adminDailyAccessCode, String type) async =>
+      await _handleRequest(
+          "/admin/$adminID/$adminDailyAccessCode/set_external_api_type", type);
+
+  /// ```text
+  /// Set the time to update the tables' data using the external api or null to disable it (num, in seconds)
+  ///
+  /// - OK Request value -
+  /// Returns the set request frequency in seconds as a [String] representing a [num]
+  ///
+  /// - Bad Request errors -
+  /// "Invalid admin id or daily access code"
+  ///
+  /// "Unauthorized user"
+  ///
+  /// "Invalid api request frequency time, should be a double in seconds, or null to disable requests"
+  static Future<MasasasResponse> adminSetExternalApiRequestFrequencySeconds(
+          String adminID, String adminDailyAccessCode, num time) async =>
+      await _handleRequest(
+          "/admin/$adminID/$adminDailyAccessCode/set_external_api_request_frequency_seconds",
           time.toString());
 
   /// ```text

@@ -55,6 +55,11 @@ class _AdminState extends State<Admin> {
   bool _obscurePassword = true;
   bool _obscurePasswordRepeat = true;
 
+  final _externalApiKey = TextEditingController();
+  final _externalApiUrl = TextEditingController();
+  final _externalApiType = TextEditingController();
+  final _externalApiRequestFrequencySeconds = TextEditingController();
+
   @override
   void initState() {
     if (widget.nfcAvailable) {
@@ -105,16 +110,12 @@ class _AdminState extends State<Admin> {
         widget.showConfirmation("Created user successfully", 16);
         if (kDebugMode) print(createdUserJson.body);
         return;
-      case MasasasResult.badRequest:
+      default:
         if (createdUserJson.body == "Invalid admin id or daily access code") {
           widget.invalidateUserCredentials(createdUserJson.body);
         } else {
           widget.showError(createdUserJson.body, 16);
         }
-        return;
-
-      case MasasasResult.connectionError:
-        widget.showError(createdUserJson.body, 16);
         return;
     }
   }
@@ -148,16 +149,12 @@ class _AdminState extends State<Admin> {
         widget.showConfirmation("Created table successfully", 16);
         if (kDebugMode) print(createdTableJson.body);
         return;
-      case MasasasResult.badRequest:
+      default:
         if (createdTableJson.body == "Invalid admin id or daily access code") {
           widget.invalidateUserCredentials(createdTableJson.body);
         } else {
           widget.showError(createdTableJson.body, 16);
         }
-        return;
-
-      case MasasasResult.connectionError:
-        widget.showError(createdTableJson.body, 16);
         return;
     }
   }
@@ -171,16 +168,12 @@ class _AdminState extends State<Admin> {
         widget.showConfirmation("Deleted user successfully", 16);
         if (kDebugMode) print(deletedUserJson.body);
         return;
-      case MasasasResult.badRequest:
+      default:
         if (deletedUserJson.body == "Invalid admin id or daily access code") {
           widget.invalidateUserCredentials(deletedUserJson.body);
         } else {
           widget.showError(deletedUserJson.body, 16);
         }
-        return;
-
-      case MasasasResult.connectionError:
-        widget.showError(deletedUserJson.body, 16);
         return;
     }
   }
@@ -194,16 +187,94 @@ class _AdminState extends State<Admin> {
         widget.showConfirmation("Deleted table successfully", 16);
         if (kDebugMode) print(deletedTableJson.body);
         return;
-      case MasasasResult.badRequest:
+      default:
         if (deletedTableJson.body == "Invalid admin id or daily access code") {
           widget.invalidateUserCredentials(deletedTableJson.body);
         } else {
           widget.showError(deletedTableJson.body, 16);
         }
         return;
+    }
+  }
 
-      case MasasasResult.connectionError:
-        widget.showError(deletedTableJson.body, 16);
+  void updateExternalApiConfig() async {
+    MasasasResponse setApiKey = await MasasasApi.adminSetExternalApiKey(
+        widget.adminID, widget.adminDailyAccessCode, _externalApiKey.text);
+    MasasasResponse setApiUrl = await MasasasApi.adminSetExternalApiUrl(
+        widget.adminID,
+        widget.adminDailyAccessCode,
+        Uri.parse(_externalApiUrl.text));
+    MasasasResponse setApiType = await MasasasApi.adminSetExternalApiType(
+        widget.adminID, widget.adminDailyAccessCode, _externalApiType.text);
+    MasasasResponse setApiRequestFrequencySeconds =
+        await MasasasApi.adminSetExternalApiRequestFrequencySeconds(
+            widget.adminID,
+            widget.adminDailyAccessCode,
+            num.parse(_externalApiRequestFrequencySeconds.text));
+
+    switch ((
+      setApiKey.result,
+      setApiUrl.result,
+      setApiType.result,
+      setApiRequestFrequencySeconds.result
+    )) {
+      case (
+          MasasasResult.ok,
+          MasasasResult.ok,
+          MasasasResult.ok,
+          MasasasResult.ok
+        ):
+        widget.showConfirmation(
+            "Successfully updated external api settings", 16);
+        return;
+      case (MasasasResult.badRequest || MasasasResult.connectionError, _, _, _):
+        if (setApiKey.body == "Invalid admin id or daily access code") {
+          widget.invalidateUserCredentials(setApiKey.body);
+        } else {
+          widget.showError(setApiKey.body, 16);
+        }
+        return;
+      case (_, MasasasResult.badRequest || MasasasResult.connectionError, _, _):
+        if (setApiUrl.body == "Invalid admin id or daily access code") {
+          widget.invalidateUserCredentials(setApiUrl.body);
+        } else {
+          widget.showError(setApiUrl.body, 16);
+        }
+        return;
+      case (_, _, MasasasResult.badRequest || MasasasResult.connectionError, _):
+        if (setApiType.body == "Invalid admin id or daily access code") {
+          widget.invalidateUserCredentials(setApiType.body);
+        } else {
+          widget.showError(setApiType.body, 16);
+        }
+        return;
+      case (_, _, _, MasasasResult.badRequest || MasasasResult.connectionError):
+        if (setApiRequestFrequencySeconds.body ==
+            "Invalid admin id or daily access code") {
+          widget.invalidateUserCredentials(setApiRequestFrequencySeconds.body);
+        } else {
+          widget.showError(setApiRequestFrequencySeconds.body, 16);
+        }
+        return;
+    }
+  }
+
+  void importExternalApiTables() async {
+    MasasasResponse deletedTableJson =
+        await MasasasApi.adminImportExternalApiTables(
+            widget.adminID, widget.adminDailyAccessCode);
+
+    switch (deletedTableJson.result) {
+      case MasasasResult.ok:
+        widget.showConfirmation("Imported tables successfully", 16);
+        if (kDebugMode) print(deletedTableJson.body);
+        return;
+      default:
+        if (deletedTableJson.body == "Invalid admin id or daily access code") {
+          widget.invalidateUserCredentials(deletedTableJson.body);
+        } else {
+          widget.showError(deletedTableJson.body, 16);
+        }
         return;
     }
   }
@@ -368,6 +439,63 @@ class _AdminState extends State<Admin> {
                           onPressed: deleteUser,
                           icon: const Icon(Icons.person),
                           label: const Text("Delete user"),
+                        )
+                      ],
+                    ),
+                    const SizedBox(
+                      height: 32,
+                    ),
+                    Wrap(
+                      runSpacing: 12,
+                      children: [
+                        const Text("Set external api settings"),
+                        TextField(
+                          decoration: const InputDecoration(
+                            labelText: 'Key',
+                            border: OutlineInputBorder(),
+                          ),
+                          controller: _externalApiKey,
+                        ),
+                        TextField(
+                          decoration: const InputDecoration(
+                            labelText: 'Url',
+                            border: OutlineInputBorder(),
+                          ),
+                          controller: _externalApiUrl,
+                        ),
+                        TextField(
+                          decoration: const InputDecoration(
+                            labelText: 'Type',
+                            border: OutlineInputBorder(),
+                          ),
+                          controller: _externalApiType,
+                        ),
+                        TextField(
+                          controller: _externalApiRequestFrequencySeconds,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          inputFormatters: <TextInputFormatter>[
+                            FilteringTextInputFormatter.allow(
+                                RegExp(r'^\d+\.?\d{0,2}'))
+                          ],
+                          decoration: const InputDecoration(
+                            labelText: "Request frequency (seconds)",
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            OutlinedButton.icon(
+                              onPressed: updateExternalApiConfig,
+                              icon: const Icon(Icons.api),
+                              label: const Text("Set external api settings"),
+                            ),
+                          ],
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: importExternalApiTables,
+                          icon: const Icon(Icons.table_restaurant),
+                          label: const Text("Import api tables"),
                         )
                       ],
                     ),
