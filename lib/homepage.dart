@@ -237,7 +237,7 @@ class _HomepageState extends State<Homepage> {
                     itemCount: _tables!.length,
                     itemBuilder: (context, index) => ListTile(
                       leading: deskIcon[_tables![index]["Data"]["Icon"]],
-                      title: Text(_tables![index]["Data"]["Location"]),
+                      title: Text(_tables![index]["Data"]["Name"]),
                       subtitle: Text(_tables![index]["ID"]),
                       onTap: () => selectTable(_tables![index]["ID"],
                           _tables![index]["DailyAccessCode"]),

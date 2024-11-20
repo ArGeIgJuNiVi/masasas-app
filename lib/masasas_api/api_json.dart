@@ -25,23 +25,25 @@ Future<String> newUserJson(
 /// Returns the json representation of an [UnsecuredTable] (server type)
 /// used in the [MasasasAPI.adminCreateTable] method
 String newTableJson(
-  String location,
   String macAddress,
+  String connectionMode,
   String manufacturer,
   num minHeight,
-  num maxHeight, [
+  num maxHeight,
+  String name, [
   num? currentHeight,
   String icon = "table",
 ]) =>
     """
 {
   "Data": {
-    "Location": "$location",
     "MacAddress": "$macAddress",
+    "ConnectionMode": "$connectionMode",
     "Manufacturer": "$manufacturer",
     "MinHeight": $minHeight,
     "MaxHeight": $maxHeight,
     "CurrentHeight": ${currentHeight ?? minHeight},
+    "Name": "$name",
     "Icon": "$icon"
   }
 }

@@ -110,8 +110,8 @@ class UserStats extends StatefulWidget {
 
   final Map<String, SessionStats> sessions;
   final String currentSession;
-  final double min;
-  final double max;
+  final num min;
+  final num max;
 
   @override
   State<UserStats> createState() => _UserStatsState();

@@ -233,7 +233,7 @@ class _TableManagerState extends State<TableManager> {
                   child: Text.rich(
                     textAlign: TextAlign.center,
                     TextSpan(
-                      text: "${_selectedTableData!["Data"]["Location"]}\n",
+                      text: "${_selectedTableData!["Data"]["Name"]}\n",
                       style: const TextStyle(
                           fontSize: 20, fontStyle: FontStyle.italic),
                       children: [

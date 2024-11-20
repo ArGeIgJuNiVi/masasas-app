@@ -40,11 +40,12 @@ class _AdminState extends State<Admin> {
   bool _createUserAllowedSelfDeletion = true;
 
   final _createTableID = TextEditingController();
-  final _createTableLocation = TextEditingController();
   final _createTableMacAddress = TextEditingController();
+  var _createTableConnectionMode = "bluetooth";
   final _createTableManufacturer = TextEditingController();
   final _createTableMinHeight = TextEditingController();
   final _createTableMaxHeight = TextEditingController();
+  final _createTableName = TextEditingController();
   final _createTableCurrentHeight = TextEditingController();
   final _createTableIcon = TextEditingController(text: "table");
 
@@ -57,7 +58,7 @@ class _AdminState extends State<Admin> {
 
   final _externalApiKey = TextEditingController();
   final _externalApiUrl = TextEditingController();
-  final _externalApiType = TextEditingController();
+  var _externalApiType = "dummy";
   final _externalApiRequestFrequencySeconds = TextEditingController();
 
   @override
@@ -124,11 +125,12 @@ class _AdminState extends State<Admin> {
     String tableJson;
     try {
       tableJson = newTableJson(
-        _createTableLocation.text,
         _createTableMacAddress.text,
+        _createTableConnectionMode,
         _createTableManufacturer.text,
         num.parse(_createTableMinHeight.text),
         num.parse(_createTableMaxHeight.text),
+        _createTableName.text,
         num.parse(_createTableCurrentHeight.text),
         _createTableIcon.text,
       );
@@ -198,19 +200,23 @@ class _AdminState extends State<Admin> {
   }
 
   void updateExternalApiConfig() async {
-    MasasasResponse setApiKey = await MasasasApi.adminSetExternalApiKey(
-        widget.adminID, widget.adminDailyAccessCode, _externalApiKey.text);
-    MasasasResponse setApiUrl = await MasasasApi.adminSetExternalApiUrl(
-        widget.adminID,
-        widget.adminDailyAccessCode,
-        Uri.parse(_externalApiUrl.text));
+    MasasasResponse setApiKey = _externalApiKey.text.isNotEmpty
+        ? await MasasasApi.adminSetExternalApiKey(
+            widget.adminID, widget.adminDailyAccessCode, _externalApiKey.text)
+        : MasasasResponse("", MasasasResult.ok);
+    MasasasResponse setApiUrl = _externalApiUrl.text.isNotEmpty
+        ? await MasasasApi.adminSetExternalApiUrl(widget.adminID,
+            widget.adminDailyAccessCode, Uri.parse(_externalApiUrl.text))
+        : MasasasResponse("", MasasasResult.ok);
     MasasasResponse setApiType = await MasasasApi.adminSetExternalApiType(
-        widget.adminID, widget.adminDailyAccessCode, _externalApiType.text);
+        widget.adminID, widget.adminDailyAccessCode, _externalApiType);
     MasasasResponse setApiRequestFrequencySeconds =
-        await MasasasApi.adminSetExternalApiRequestFrequencySeconds(
-            widget.adminID,
-            widget.adminDailyAccessCode,
-            num.parse(_externalApiRequestFrequencySeconds.text));
+        _externalApiRequestFrequencySeconds.text.isNotEmpty
+            ? await MasasasApi.adminSetExternalApiRequestFrequencySeconds(
+                widget.adminID,
+                widget.adminDailyAccessCode,
+                num.parse(_externalApiRequestFrequencySeconds.text))
+            : MasasasResponse("", MasasasResult.ok);
 
     switch ((
       setApiKey.result,
@@ -463,12 +469,26 @@ class _AdminState extends State<Admin> {
                           ),
                           controller: _externalApiUrl,
                         ),
-                        TextField(
-                          decoration: const InputDecoration(
-                            labelText: 'Type',
-                            border: OutlineInputBorder(),
-                          ),
-                          controller: _externalApiType,
+                        Row(
+                          children: [
+                            const Text("Api type:"),
+                            Padding(
+                              padding: const EdgeInsets.only(left: 16.0),
+                              child: DropdownButton(
+                                value: _externalApiType,
+                                items: const [
+                                  DropdownMenuItem(
+                                      value: "dummy", child: Text("dummy")),
+                                  DropdownMenuItem(
+                                      value: "Kr64", child: Text("Kr64")),
+                                ],
+                                onChanged: (String? val) => setState(
+                                  () => _externalApiType =
+                                      val ?? _externalApiType,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                         TextField(
                           controller: _externalApiRequestFrequencySeconds,
@@ -519,17 +539,32 @@ class _AdminState extends State<Admin> {
                         ),
                         TextField(
                           decoration: const InputDecoration(
-                            labelText: 'Location',
-                            border: OutlineInputBorder(),
-                          ),
-                          controller: _createTableLocation,
-                        ),
-                        TextField(
-                          decoration: const InputDecoration(
                             labelText: 'Mac address',
                             border: OutlineInputBorder(),
                           ),
                           controller: _createTableMacAddress,
+                        ),
+                        Row(
+                          children: [
+                            const Text("Connection mode:"),
+                            Padding(
+                              padding: const EdgeInsets.only(left: 16.0),
+                              child: DropdownButton(
+                                value: _createTableConnectionMode,
+                                items: const [
+                                  DropdownMenuItem(
+                                      value: "bluetooth",
+                                      child: Text("bluetooth")),
+                                  DropdownMenuItem(
+                                      value: "api", child: Text("api")),
+                                ],
+                                onChanged: (String? val) => setState(
+                                  () => _createTableConnectionMode =
+                                      val ?? _createTableConnectionMode,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                         TextField(
                           decoration: const InputDecoration(
@@ -565,6 +600,13 @@ class _AdminState extends State<Admin> {
                             labelText: "Maximum table height",
                             border: OutlineInputBorder(),
                           ),
+                        ),
+                        TextField(
+                          decoration: const InputDecoration(
+                            labelText: 'Name',
+                            border: OutlineInputBorder(),
+                          ),
+                          controller: _createTableName,
                         ),
                         TextField(
                           controller: _createTableCurrentHeight,
