@@ -33,9 +33,16 @@ String newTableJson(
   String name, [
   num? currentHeight,
   String icon = "table",
-]) =>
-    """
-{
+  ({
+    String type,
+    String key,
+    String url,
+  })? api,
+  ({
+    String name,
+  })? bluetooth,
+]) {
+  return """{
   "Data": {
     "MacAddress": "$macAddress",
     "ConnectionMode": "$connectionMode",
@@ -44,7 +51,31 @@ String newTableJson(
     "MaxHeight": $maxHeight,
     "CurrentHeight": ${currentHeight ?? minHeight},
     "Name": "$name",
-    "Icon": "$icon"
+    "Icon": "$icon",
+    "Api": ${api == null ? "null" : tableApiDataJson(api.type, api.key, api.url)},
+    "Bluetooth": ${bluetooth == null ? "null" : tableBluetoothDataJson(bluetooth.name)}
   }
+}""";
 }
-""";
+
+/// Returns the json representation of a [TableData.ApiData] (server type)
+/// used in the [MasasasAPI.adminImportTablesExternalApi] method
+String tableApiDataJson(
+  String type,
+  String url,
+  String key,
+) =>
+    """{
+  "Type": "$type",
+  "Url": "$url",
+  "Key": "$key"
+}""";
+
+/// Returns the json representation of a [TableData.BluetoothData] (server type)
+/// TODO not used yet because bluetooth functionality is not implemented
+String tableBluetoothDataJson(
+  String name,
+) =>
+    """{
+  "Name": "$name"
+}""";

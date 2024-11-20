@@ -41,13 +41,17 @@ class _AdminState extends State<Admin> {
 
   final _createTableID = TextEditingController();
   final _createTableMacAddress = TextEditingController();
-  var _createTableConnectionMode = "bluetooth";
   final _createTableManufacturer = TextEditingController();
   final _createTableMinHeight = TextEditingController();
   final _createTableMaxHeight = TextEditingController();
   final _createTableName = TextEditingController();
   final _createTableCurrentHeight = TextEditingController();
   final _createTableIcon = TextEditingController(text: "table");
+  var _createTableConnectionMode = "bluetooth";
+  final _createTableApiKey = TextEditingController();
+  final _createTableApiUrl = TextEditingController();
+  var _createTableApiType = "dummy";
+  final _createTableBluetoothName = TextEditingController();
 
   final _deleteUserID = TextEditingController();
 
@@ -56,9 +60,10 @@ class _AdminState extends State<Admin> {
   bool _obscurePassword = true;
   bool _obscurePasswordRepeat = true;
 
-  final _externalApiKey = TextEditingController();
-  final _externalApiUrl = TextEditingController();
-  var _externalApiType = "dummy";
+  final _importApiKey = TextEditingController();
+  final _importApiUrl = TextEditingController();
+  var _importApiType = "dummy";
+
   final _externalApiRequestFrequencySeconds = TextEditingController();
 
   @override
@@ -133,6 +138,16 @@ class _AdminState extends State<Admin> {
         _createTableName.text,
         num.parse(_createTableCurrentHeight.text),
         _createTableIcon.text,
+        _createTableConnectionMode == "api"
+            ? (
+                type: _createTableApiType,
+                url: _createTableApiUrl.text,
+                key: _createTableApiKey.text,
+              )
+            : null,
+        _createTableConnectionMode == "bluetooth"
+            ? (name: _createTableBluetoothName.text,)
+            : null,
       );
     } catch (e) {
       if (kDebugMode) print(e);
@@ -200,16 +215,6 @@ class _AdminState extends State<Admin> {
   }
 
   void updateExternalApiConfig() async {
-    MasasasResponse setApiKey = _externalApiKey.text.isNotEmpty
-        ? await MasasasApi.adminSetExternalApiKey(
-            widget.adminID, widget.adminDailyAccessCode, _externalApiKey.text)
-        : MasasasResponse("", MasasasResult.ok);
-    MasasasResponse setApiUrl = _externalApiUrl.text.isNotEmpty
-        ? await MasasasApi.adminSetExternalApiUrl(widget.adminID,
-            widget.adminDailyAccessCode, Uri.parse(_externalApiUrl.text))
-        : MasasasResponse("", MasasasResult.ok);
-    MasasasResponse setApiType = await MasasasApi.adminSetExternalApiType(
-        widget.adminID, widget.adminDailyAccessCode, _externalApiType);
     MasasasResponse setApiRequestFrequencySeconds =
         _externalApiRequestFrequencySeconds.text.isNotEmpty
             ? await MasasasApi.adminSetExternalApiRequestFrequencySeconds(
@@ -218,43 +223,12 @@ class _AdminState extends State<Admin> {
                 num.parse(_externalApiRequestFrequencySeconds.text))
             : MasasasResponse("", MasasasResult.ok);
 
-    switch ((
-      setApiKey.result,
-      setApiUrl.result,
-      setApiType.result,
-      setApiRequestFrequencySeconds.result
-    )) {
-      case (
-          MasasasResult.ok,
-          MasasasResult.ok,
-          MasasasResult.ok,
-          MasasasResult.ok
-        ):
+    switch ((setApiRequestFrequencySeconds.result)) {
+      case (MasasasResult.ok):
         widget.showConfirmation(
             "Successfully updated external api settings", 16);
         return;
-      case (MasasasResult.badRequest || MasasasResult.connectionError, _, _, _):
-        if (setApiKey.body == "Invalid admin id or daily access code") {
-          widget.invalidateUserCredentials(setApiKey.body);
-        } else {
-          widget.showError(setApiKey.body, 16);
-        }
-        return;
-      case (_, MasasasResult.badRequest || MasasasResult.connectionError, _, _):
-        if (setApiUrl.body == "Invalid admin id or daily access code") {
-          widget.invalidateUserCredentials(setApiUrl.body);
-        } else {
-          widget.showError(setApiUrl.body, 16);
-        }
-        return;
-      case (_, _, MasasasResult.badRequest || MasasasResult.connectionError, _):
-        if (setApiType.body == "Invalid admin id or daily access code") {
-          widget.invalidateUserCredentials(setApiType.body);
-        } else {
-          widget.showError(setApiType.body, 16);
-        }
-        return;
-      case (_, _, _, MasasasResult.badRequest || MasasasResult.connectionError):
+      default:
         if (setApiRequestFrequencySeconds.body ==
             "Invalid admin id or daily access code") {
           widget.invalidateUserCredentials(setApiRequestFrequencySeconds.body);
@@ -266,20 +240,23 @@ class _AdminState extends State<Admin> {
   }
 
   void importExternalApiTables() async {
-    MasasasResponse deletedTableJson =
-        await MasasasApi.adminImportExternalApiTables(
-            widget.adminID, widget.adminDailyAccessCode);
+    MasasasResponse importedTableJson =
+        await MasasasApi.adminImportTablesExternalApi(
+      widget.adminID,
+      widget.adminDailyAccessCode,
+      tableApiDataJson(_importApiType, _importApiUrl.text, _importApiKey.text),
+    );
 
-    switch (deletedTableJson.result) {
+    switch (importedTableJson.result) {
       case MasasasResult.ok:
         widget.showConfirmation("Imported tables successfully", 16);
-        if (kDebugMode) print(deletedTableJson.body);
+        if (kDebugMode) print(importedTableJson.body);
         return;
       default:
-        if (deletedTableJson.body == "Invalid admin id or daily access code") {
-          widget.invalidateUserCredentials(deletedTableJson.body);
+        if (importedTableJson.body == "Invalid admin id or daily access code") {
+          widget.invalidateUserCredentials(importedTableJson.body);
         } else {
-          widget.showError(deletedTableJson.body, 16);
+          widget.showError(importedTableJson.body, 16);
         }
         return;
     }
@@ -312,213 +289,197 @@ class _AdminState extends State<Admin> {
                 width: columnWidth,
                 child: Column(
                   children: [
-                    Wrap(
-                      runSpacing: 12,
-                      children: [
-                        const Text("Create user"),
-                        TextField(
-                          decoration: const InputDecoration(
-                            labelText: 'User id',
-                            border: OutlineInputBorder(),
-                          ),
-                          controller: _createUserID,
-                        ),
-                        TextField(
-                          obscureText: _obscurePassword,
-                          decoration: InputDecoration(
-                            labelText: 'Password',
-                            border: const OutlineInputBorder(),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscurePassword
-                                    ? Icons.visibility
-                                    : Icons.visibility_off,
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  _obscurePassword = !_obscurePassword;
-                                });
-                              },
+                    FocusTraversalGroup(
+                      child: Wrap(
+                        runSpacing: 12,
+                        children: [
+                          const Text("Create user"),
+                          TextField(
+                            decoration: const InputDecoration(
+                              labelText: 'User id',
+                              border: OutlineInputBorder(),
                             ),
+                            controller: _createUserID,
                           ),
-                          controller: _createUserPassword,
-                        ),
-                        TextField(
-                          obscureText: _obscurePasswordRepeat,
-                          decoration: InputDecoration(
-                            labelText: 'Repeat password',
-                            border: const OutlineInputBorder(),
-                            suffixIcon: IconButton(
-                              tooltip: "Toggle visibility",
-                              icon: Icon(
-                                _obscurePasswordRepeat
-                                    ? Icons.visibility
-                                    : Icons.visibility_off,
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  _obscurePasswordRepeat =
-                                      !_obscurePasswordRepeat;
-                                });
-                              },
-                            ),
-                          ),
-                          controller: _createUserPasswordRepeat,
-                        ),
-                        TextField(
-                          decoration: const InputDecoration(
-                            labelText: 'Alias',
-                            border: OutlineInputBorder(),
-                          ),
-                          onChanged: (_) => setState(() {}),
-                          controller: _createUserAlias,
-                        ),
-                        Visibility(
-                          visible: _createUserAlias.text.isEmpty,
-                          child: Column(
-                            children: [
-                              TextField(
-                                decoration: const InputDecoration(
-                                  labelText: 'Username',
-                                  border: OutlineInputBorder(),
+                          TextField(
+                            obscureText: _obscurePassword,
+                            decoration: InputDecoration(
+                              labelText: 'Password',
+                              border: const OutlineInputBorder(),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword
+                                      ? Icons.visibility
+                                      : Icons.visibility_off,
                                 ),
-                                controller: _createUsername,
+                                onPressed: () {
+                                  setState(() {
+                                    _obscurePassword = !_obscurePassword;
+                                  });
+                                },
                               ),
-                              Row(
-                                children: [
-                                  Checkbox(
-                                    value: _createUserAdministrator,
-                                    onChanged: (val) => setState(() =>
-                                        _createUserAdministrator =
-                                            val ?? _createUserAdministrator),
-                                  ),
-                                  const Text("Administrator"),
-                                ],
+                            ),
+                            controller: _createUserPassword,
+                          ),
+                          TextField(
+                            obscureText: _obscurePasswordRepeat,
+                            decoration: InputDecoration(
+                              labelText: 'Repeat password',
+                              border: const OutlineInputBorder(),
+                              suffixIcon: IconButton(
+                                tooltip: "Toggle visibility",
+                                icon: Icon(
+                                  _obscurePasswordRepeat
+                                      ? Icons.visibility
+                                      : Icons.visibility_off,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _obscurePasswordRepeat =
+                                        !_obscurePasswordRepeat;
+                                  });
+                                },
                               ),
-                              Row(
-                                children: [
-                                  Checkbox(
-                                    value: _createUserAllowedPersonalization,
-                                    onChanged: (val) => setState(() =>
-                                        _createUserAllowedPersonalization = val ??
-                                            _createUserAllowedPersonalization),
+                            ),
+                            controller: _createUserPasswordRepeat,
+                          ),
+                          TextField(
+                            decoration: const InputDecoration(
+                              labelText: 'Alias',
+                              border: OutlineInputBorder(),
+                            ),
+                            onChanged: (_) => setState(() {}),
+                            controller: _createUserAlias,
+                          ),
+                          Visibility(
+                            visible: _createUserAlias.text.isEmpty,
+                            child: Column(
+                              children: [
+                                TextField(
+                                  decoration: const InputDecoration(
+                                    labelText: 'Username',
+                                    border: OutlineInputBorder(),
                                   ),
-                                  const Text("Allowed personalization"),
-                                ],
+                                  controller: _createUsername,
+                                ),
+                                Row(
+                                  children: [
+                                    Checkbox(
+                                      value: _createUserAdministrator,
+                                      onChanged: (val) => setState(() =>
+                                          _createUserAdministrator =
+                                              val ?? _createUserAdministrator),
+                                    ),
+                                    const Text("Administrator"),
+                                  ],
+                                ),
+                                Row(
+                                  children: [
+                                    Checkbox(
+                                      value: _createUserAllowedPersonalization,
+                                      onChanged: (val) => setState(() =>
+                                          _createUserAllowedPersonalization = val ??
+                                              _createUserAllowedPersonalization),
+                                    ),
+                                    const Text("Allowed personalization"),
+                                  ],
+                                ),
+                                Row(
+                                  children: [
+                                    Checkbox(
+                                      value: _createUserAllowedSelfDeletion,
+                                      onChanged: (val) => setState(() =>
+                                          _createUserAllowedSelfDeletion = val ??
+                                              _createUserAllowedSelfDeletion),
+                                    ),
+                                    const Text("Allowed self deletion"),
+                                  ],
+                                )
+                              ],
+                            ),
+                          ),
+                          OutlinedButton.icon(
+                            onPressed: createUser,
+                            icon: const Icon(Icons.person),
+                            label: const Text("Create user"),
+                          )
+                        ],
+                      ),
+                    ),
+                    const SizedBox(
+                      height: 32,
+                    ),
+                    FocusTraversalGroup(
+                      child: Wrap(
+                        runSpacing: 12,
+                        children: [
+                          const Text("Delete user"),
+                          TextField(
+                            decoration: const InputDecoration(
+                              labelText: 'User id',
+                              border: OutlineInputBorder(),
+                            ),
+                            controller: _deleteUserID,
+                          ),
+                          OutlinedButton.icon(
+                            onPressed: deleteUser,
+                            icon: const Icon(Icons.person),
+                            label: const Text("Delete user"),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(
+                      height: 32,
+                    ),
+                    FocusTraversalGroup(
+                      child: Wrap(
+                        runSpacing: 12,
+                        children: [
+                          const Text("Import Tables from external api"),
+                          TextField(
+                            decoration: const InputDecoration(
+                              labelText: 'Url',
+                              border: OutlineInputBorder(),
+                            ),
+                            controller: _importApiUrl,
+                          ),
+                          TextField(
+                            decoration: const InputDecoration(
+                              labelText: 'Key',
+                              border: OutlineInputBorder(),
+                            ),
+                            controller: _importApiKey,
+                          ),
+                          Row(
+                            children: [
+                              const Text("Api type:"),
+                              Padding(
+                                padding: const EdgeInsets.only(left: 16.0),
+                                child: DropdownButton(
+                                  value: _importApiType,
+                                  items: const [
+                                    DropdownMenuItem(
+                                        value: "dummy", child: Text("dummy")),
+                                    DropdownMenuItem(
+                                        value: "Kr64", child: Text("Kr64")),
+                                  ],
+                                  onChanged: (String? val) => setState(
+                                    () =>
+                                        _importApiType = val ?? _importApiType,
+                                  ),
+                                ),
                               ),
-                              Row(
-                                children: [
-                                  Checkbox(
-                                    value: _createUserAllowedSelfDeletion,
-                                    onChanged: (val) => setState(() =>
-                                        _createUserAllowedSelfDeletion = val ??
-                                            _createUserAllowedSelfDeletion),
-                                  ),
-                                  const Text("Allowed self deletion"),
-                                ],
-                              )
                             ],
                           ),
-                        ),
-                        OutlinedButton.icon(
-                          onPressed: createUser,
-                          icon: const Icon(Icons.person),
-                          label: const Text("Create user"),
-                        )
-                      ],
-                    ),
-                    const SizedBox(
-                      height: 32,
-                    ),
-                    Wrap(
-                      runSpacing: 12,
-                      children: [
-                        const Text("Delete user"),
-                        TextField(
-                          decoration: const InputDecoration(
-                            labelText: 'User id',
-                            border: OutlineInputBorder(),
-                          ),
-                          controller: _deleteUserID,
-                        ),
-                        OutlinedButton.icon(
-                          onPressed: deleteUser,
-                          icon: const Icon(Icons.person),
-                          label: const Text("Delete user"),
-                        )
-                      ],
-                    ),
-                    const SizedBox(
-                      height: 32,
-                    ),
-                    Wrap(
-                      runSpacing: 12,
-                      children: [
-                        const Text("Set external api settings"),
-                        TextField(
-                          decoration: const InputDecoration(
-                            labelText: 'Key',
-                            border: OutlineInputBorder(),
-                          ),
-                          controller: _externalApiKey,
-                        ),
-                        TextField(
-                          decoration: const InputDecoration(
-                            labelText: 'Url',
-                            border: OutlineInputBorder(),
-                          ),
-                          controller: _externalApiUrl,
-                        ),
-                        Row(
-                          children: [
-                            const Text("Api type:"),
-                            Padding(
-                              padding: const EdgeInsets.only(left: 16.0),
-                              child: DropdownButton(
-                                value: _externalApiType,
-                                items: const [
-                                  DropdownMenuItem(
-                                      value: "dummy", child: Text("dummy")),
-                                  DropdownMenuItem(
-                                      value: "Kr64", child: Text("Kr64")),
-                                ],
-                                onChanged: (String? val) => setState(
-                                  () => _externalApiType =
-                                      val ?? _externalApiType,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        TextField(
-                          controller: _externalApiRequestFrequencySeconds,
-                          keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true),
-                          inputFormatters: <TextInputFormatter>[
-                            FilteringTextInputFormatter.allow(
-                                RegExp(r'^\d+\.?\d{0,2}'))
-                          ],
-                          decoration: const InputDecoration(
-                            labelText: "Request frequency (seconds)",
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            OutlinedButton.icon(
-                              onPressed: updateExternalApiConfig,
-                              icon: const Icon(Icons.api),
-                              label: const Text("Set external api settings"),
-                            ),
-                          ],
-                        ),
-                        OutlinedButton.icon(
-                          onPressed: importExternalApiTables,
-                          icon: const Icon(Icons.table_restaurant),
-                          label: const Text("Import api tables"),
-                        )
-                      ],
-                    ),
+                          OutlinedButton.icon(
+                            onPressed: importExternalApiTables,
+                            icon: const Icon(Icons.table_restaurant),
+                            label: const Text("Import api tables"),
+                          )
+                        ],
+                      ),
+                    )
                   ],
                 ),
               ),
@@ -543,28 +504,6 @@ class _AdminState extends State<Admin> {
                             border: OutlineInputBorder(),
                           ),
                           controller: _createTableMacAddress,
-                        ),
-                        Row(
-                          children: [
-                            const Text("Connection mode:"),
-                            Padding(
-                              padding: const EdgeInsets.only(left: 16.0),
-                              child: DropdownButton(
-                                value: _createTableConnectionMode,
-                                items: const [
-                                  DropdownMenuItem(
-                                      value: "bluetooth",
-                                      child: Text("bluetooth")),
-                                  DropdownMenuItem(
-                                      value: "api", child: Text("api")),
-                                ],
-                                onChanged: (String? val) => setState(
-                                  () => _createTableConnectionMode =
-                                      val ?? _createTableConnectionMode,
-                                ),
-                              ),
-                            ),
-                          ],
                         ),
                         TextField(
                           decoration: const InputDecoration(
@@ -628,33 +567,145 @@ class _AdminState extends State<Admin> {
                           ),
                           controller: _createTableIcon,
                         ),
+                        Row(
+                          children: [
+                            const Text("Connection mode:"),
+                            Padding(
+                              padding: const EdgeInsets.only(left: 16.0),
+                              child: DropdownButton(
+                                value: _createTableConnectionMode,
+                                items: const [
+                                  DropdownMenuItem(
+                                      value: "bluetooth",
+                                      child: Text("bluetooth")),
+                                  DropdownMenuItem(
+                                      value: "api", child: Text("api")),
+                                ],
+                                onChanged: (String? val) => setState(
+                                  () => _createTableConnectionMode =
+                                      val ?? _createTableConnectionMode,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Visibility(
+                          visible: _createTableConnectionMode == "api",
+                          child: Wrap(
+                            runSpacing: 12,
+                            children: [
+                              TextField(
+                                decoration: const InputDecoration(
+                                  labelText: 'Api Url',
+                                  border: OutlineInputBorder(),
+                                ),
+                                controller: _createTableApiUrl,
+                              ),
+                              TextField(
+                                decoration: const InputDecoration(
+                                  labelText: 'Api Key',
+                                  border: OutlineInputBorder(),
+                                ),
+                                controller: _createTableApiKey,
+                              ),
+                              Row(
+                                children: [
+                                  const Text("Api type:"),
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 16.0),
+                                    child: DropdownButton(
+                                      value: _createTableApiType,
+                                      items: const [
+                                        DropdownMenuItem(
+                                            value: "dummy",
+                                            child: Text("dummy")),
+                                        DropdownMenuItem(
+                                            value: "Kr64", child: Text("Kr64")),
+                                      ],
+                                      onChanged: (String? val) => setState(
+                                        () => _createTableApiType =
+                                            val ?? _createTableApiType,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        Visibility(
+                          visible: _createTableConnectionMode == "bluetooth",
+                          child: Wrap(
+                            runSpacing: 12,
+                            children: [
+                              TextField(
+                                decoration: const InputDecoration(
+                                  labelText: 'Name',
+                                  border: OutlineInputBorder(),
+                                ),
+                                controller: _createTableBluetoothName,
+                              ),
+                            ],
+                          ),
+                        ),
                         OutlinedButton.icon(
                           onPressed: createTable,
                           icon: const Icon(Icons.person),
                           label: const Text("Create table"),
-                        )
+                        ),
                       ],
                     ),
                     const SizedBox(
                       height: 32,
                     ),
-                    Wrap(
-                      runSpacing: 12,
-                      children: [
-                        const Text("Delete table"),
-                        TextField(
-                          decoration: const InputDecoration(
-                            labelText: 'Table id',
-                            border: OutlineInputBorder(),
+                    FocusTraversalGroup(
+                      child: Wrap(
+                        runSpacing: 12,
+                        children: [
+                          const Text("Delete table"),
+                          TextField(
+                            decoration: const InputDecoration(
+                              labelText: 'Table id',
+                              border: OutlineInputBorder(),
+                            ),
+                            controller: _deleteTableID,
                           ),
-                          controller: _deleteTableID,
-                        ),
-                        OutlinedButton.icon(
-                          onPressed: deleteTable,
-                          icon: const Icon(Icons.person),
-                          label: const Text("Delete table"),
-                        )
-                      ],
+                          OutlinedButton.icon(
+                            onPressed: deleteTable,
+                            icon: const Icon(Icons.person),
+                            label: const Text("Delete table"),
+                          )
+                        ],
+                      ),
+                    ),
+                    const SizedBox(
+                      height: 32,
+                    ),
+                    FocusTraversalGroup(
+                      child: Wrap(
+                        runSpacing: 12,
+                        children: [
+                          const Text("Set external api settings"),
+                          TextField(
+                            controller: _externalApiRequestFrequencySeconds,
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
+                            inputFormatters: <TextInputFormatter>[
+                              FilteringTextInputFormatter.allow(
+                                  RegExp(r'^\d+\.?\d{0,2}'))
+                            ],
+                            decoration: const InputDecoration(
+                              labelText: "Request frequency (seconds)",
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                          OutlinedButton.icon(
+                            onPressed: updateExternalApiConfig,
+                            icon: const Icon(Icons.api),
+                            label: const Text("Update"),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
