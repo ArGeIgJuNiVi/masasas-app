@@ -509,7 +509,8 @@ class _TableManagerState extends State<TableManager> {
           ),
         ),
         AnimatedPositioned(
-          bottom: _sessions[_currentSession]!.sittingTooLong &&
+          bottom: Settings.trackingSittingReminder &&
+                  _sessions[_currentSession]!.sittingTooLong &&
                   _selectedTableData!["Data"]["CurrentHeight"] <
                       Settings.trackingSittingHeight.value
               ? 0
