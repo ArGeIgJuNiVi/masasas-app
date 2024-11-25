@@ -189,59 +189,67 @@ class _UserStatsState extends State<UserStats> {
                 ),
               ),
             ),
-            Wrap(
-              alignment: WrapAlignment.spaceAround,
+            Row(
               children: [
-                Text(
-                    "Time sitting:\n${widget.sessions[_sessionSelection]!.timeSitting}",
-                    textAlign: TextAlign.center),
-                Text(
-                    "Time standing:\n${widget.sessions[_sessionSelection]!.timeStanding}",
-                    textAlign: TextAlign.center),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text("Unit:"),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 16.0),
-                      child: DropdownButton(
-                        value: _unit,
-                        items: const [
-                          DropdownMenuItem(value: "m", child: Text("m")),
-                          DropdownMenuItem(value: "cm", child: Text("cm")),
-                          DropdownMenuItem(
-                              value: "burgers", child: Text("inch"))
-                        ],
-                        onChanged: (String? val) {
-                          _unit = val ?? Settings.appDefaultUnit;
-                          setState(() {});
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                Visibility(
-                  visible: widget.sessions.length > 1,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+                Expanded(
+                  child: Wrap(
+                    alignment: WrapAlignment.spaceAround,
                     children: [
-                      const Text("Session:"),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 16.0),
-                        child: DropdownButton(
-                          value: _sessionSelection,
-                          items: widget.sessions.keys
-                              .map(
-                                (val) => DropdownMenuItem(
-                                  value: val,
-                                  child: Text(val),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (String? val) {
-                            _sessionSelection = val ?? widget.currentSession;
-                            setState(() {});
-                          },
+                      Text(
+                          "Time sitting:\n${widget.sessions[_sessionSelection]!.timeSitting}",
+                          textAlign: TextAlign.center),
+                      Text(
+                          "Time standing:\n${widget.sessions[_sessionSelection]!.timeStanding}",
+                          textAlign: TextAlign.center),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text("Unit:"),
+                          Padding(
+                            padding: const EdgeInsets.only(left: 16.0),
+                            child: DropdownButton(
+                              value: _unit,
+                              items: const [
+                                DropdownMenuItem(value: "m", child: Text("m")),
+                                DropdownMenuItem(
+                                    value: "cm", child: Text("cm")),
+                                DropdownMenuItem(
+                                    value: "burgers", child: Text("inch"))
+                              ],
+                              onChanged: (String? val) {
+                                _unit = val ?? Settings.appDefaultUnit;
+                                setState(() {});
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      Visibility(
+                        visible: widget.sessions.length > 1,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text("Session:"),
+                            Padding(
+                              padding: const EdgeInsets.only(left: 16.0),
+                              child: DropdownButton(
+                                value: _sessionSelection,
+                                items: widget.sessions.keys
+                                    .map(
+                                      (val) => DropdownMenuItem(
+                                        value: val,
+                                        child: Text(val),
+                                      ),
+                                    )
+                                    .toList(),
+                                onChanged: (String? val) {
+                                  _sessionSelection =
+                                      val ?? widget.currentSession;
+                                  setState(() {});
+                                },
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],

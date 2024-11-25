@@ -106,11 +106,13 @@ class _TableManagerState extends State<TableManager> {
         _retryCounter = 0;
         _selectedTableData = jsonDecode(tableJson.body);
         _userPreferences = jsonDecode(userPreferencesJson.body);
-        _sessions[_currentSession]!.addDataPoint(
-          _selectedTableData!["Data"]["CurrentHeight"],
-          _selectedTableData!["Data"]["MinHeight"],
-          _selectedTableData!["Data"]["MaxHeight"],
-        );
+        if (Settings.trackingEnabled) {
+          _sessions[_currentSession]!.addDataPoint(
+            _selectedTableData!["Data"]["CurrentHeight"],
+            _selectedTableData!["Data"]["MinHeight"],
+            _selectedTableData!["Data"]["MaxHeight"],
+          );
+        }
         return setState(() {});
     }
   }
@@ -347,49 +349,52 @@ class _TableManagerState extends State<TableManager> {
                                 left: 16.0,
                                 right: 16.0,
                               ),
-                              child: Row(
-                                children: [
-                                  const Text(
-                                    "Presets",
-                                    style: TextStyle(fontSize: 24),
-                                  ),
-                                  const SizedBox(
-                                    width: 16,
-                                  ),
-                                  Visibility(
-                                    visible: _personalizationEnabled &&
-                                        _personalizationActivated,
-                                    child: IconButton(
-                                      icon: const Icon(Icons.add),
-                                      tooltip: "Add preset",
-                                      onPressed: () => showDialog<String>(
-                                        context: context,
-                                        builder: (BuildContext context) =>
-                                            DialogInput(
-                                          addPreset: addPreset,
-                                          showError: widget.showError,
+                              child: SizedBox(
+                                height: 40,
+                                child: Row(
+                                  children: [
+                                    const Text(
+                                      "Presets",
+                                      style: TextStyle(fontSize: 24),
+                                    ),
+                                    const SizedBox(
+                                      width: 16,
+                                    ),
+                                    Visibility(
+                                      visible: _personalizationEnabled &&
+                                          _personalizationActivated,
+                                      child: IconButton(
+                                        icon: const Icon(Icons.add),
+                                        tooltip: "Add preset",
+                                        onPressed: () => showDialog<String>(
+                                          context: context,
+                                          builder: (BuildContext context) =>
+                                              DialogInput(
+                                            addPreset: addPreset,
+                                            showError: widget.showError,
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                  const Spacer(),
-                                  Visibility(
-                                    visible: _personalizationEnabled,
-                                    child: OutlinedButton.icon(
-                                      icon: Icon(
-                                        Icons.brush,
-                                        color: _personalizationActivated
-                                            ? Colors.red
-                                            : null,
-                                      ),
-                                      label: const Text("Personalize"),
-                                      onPressed: () => setState(
-                                        () => _personalizationActivated =
-                                            !_personalizationActivated,
+                                    const Spacer(),
+                                    Visibility(
+                                      visible: _personalizationEnabled,
+                                      child: OutlinedButton.icon(
+                                        icon: Icon(
+                                          Icons.brush,
+                                          color: _personalizationActivated
+                                              ? Colors.red
+                                              : null,
+                                        ),
+                                        label: const Text("Personalize"),
+                                        onPressed: () => setState(
+                                          () => _personalizationActivated =
+                                              !_personalizationActivated,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                             Expanded(
